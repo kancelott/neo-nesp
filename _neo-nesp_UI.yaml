@@ -1,17 +1,17 @@
 # neo-nesp UI
 
 packages:
-  colors: !include colors/HOMEASSISTANT
+  colors: !include neo-nesp/colors/HOMEASSISTANT
 
 font:
   - file: 'gfonts://Roboto@400'
-    glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–'
+    glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–*•'
     id: roboto_reg
     size: 24
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "fonts/materialdesignicons-webfont.ttf"
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F050F", # mdi:thermometer
           "\U000F058E", # mdi:water-percent
@@ -31,9 +31,11 @@ font:
           "\U000F0D80", # mdi:home-floor-1
           "\U000F0D81", # mdi:home-floor-2
           "\U000F004D", # mdi:arrow-left
-          "\U000F09DF", # mdi:circle-small
+          "\U000F081C", # mdi:door-open
           "\U000F0E03", # mdi:thermometer-chevron-up
           "\U000F0E02", # mdi:thermometer-chevron-down
+          "\U000F099D", # mdi:shield-lock
+          "\U000F099E", # mdi:shield-off
           "\U000F0594", # mdi:weather-night (clear)
           "\U000F0590", # mdi:weather-cloudy (cloudy)
           "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
@@ -52,15 +54,20 @@ font:
           "\U000F059D", # mdi:weather-windy (wind, windy)
           "\U000F0592", # mdi:weather-hail
           ]
+      - file: "neo-nesp/fonts/FontAwesome5-Solid+Brands+Regular.woff"
+        glyphs: [
+          "\uF00C", # checkmark
+          "\uF55A", # backspace
+        ]
 
   - file: 'gfonts://Roboto@400'
-    glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–'
+    glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–*•'
     id: roboto_med
     size: 48
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "fonts/materialdesignicons-webfont.ttf"
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F050F", # mdi:thermometer
           "\U000F058E", # mdi:water-percent
@@ -80,9 +87,11 @@ font:
           "\U000F0D80", # mdi:home-floor-1
           "\U000F0D81", # mdi:home-floor-2
           "\U000F004D", # mdi:arrow-left
-          "\U000F09DF", # mdi:circle-small
+          "\U000F081C", # mdi:door-open
           "\U000F0E03", # mdi:thermometer-chevron-up
           "\U000F0E02", # mdi:thermometer-chevron-down
+          "\U000F099D", # mdi:shield-lock
+          "\U000F099E", # mdi:shield-off
           "\U000F0594", # mdi:weather-night (clear)
           "\U000F0590", # mdi:weather-cloudy (cloudy)
           "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
@@ -109,7 +118,7 @@ font:
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "fonts/materialdesignicons-webfont.ttf"
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F171D", # mdi:fan-auto
           "\U000F1472", # mdi:fan-speed-1
@@ -137,6 +146,37 @@ font:
 globals:
   - id: active_lvgl_page
     type: std::string
+
+### For alarm pincode entry
+key_collector:
+  - source_id: alarm_keypad
+    max_length: 4
+    end_keys: "#"
+    end_key_required: False
+    back_keys: "*"
+    allowed_keys: "0123456789*#"
+    timeout: 10s
+    on_progress:
+      - if:
+          condition:
+            lambda: return (x.compare(std::string{""}) != 0);
+          then:
+            - lvgl.textarea.update:
+                id: alarm_pin
+                text: !lambda 'return x.c_str();'
+    on_result:
+      - homeassistant.action:
+          action: alarm_control_panel.alarm_disarm
+          data:
+            entity_id: ${alarm_entity}
+            code: !lambda 'return x.c_str();'
+      - lvgl.textarea.update:
+          id: alarm_pin
+          text: ""
+    on_timeout:
+      - lvgl.textarea.update:
+          id: alarm_pin
+          text: ""
 
 lvgl:
   encoders:
@@ -178,9 +218,9 @@ lvgl:
             arc_rounded: false
         - arc:
             id: current_temp_arc
-            adjustable: true
+            adjustable: True
             state:
-              disabled: true
+              disabled: True
             min_value: 120    # 12°C (* 10 because decimals not supported)
             max_value: 340    # 34°C
             height: 468
@@ -238,7 +278,7 @@ lvgl:
         - roller:
             id: set_temp_roller
             state:
-              disabled: true
+              disabled: True
             align: CENTER
             anim_time: 500ms
             text_font: roboto_med
@@ -296,32 +336,39 @@ lvgl:
             text: "NESP"
         - label:
             id: weather_icon_label
-            hidden: true
+            hidden: True
             align: CENTER
             y: -100
             text_font: roboto_huge
             text: " "
         - label:
             id: weather_temp_label
-            hidden: true
+            hidden: True
             align: CENTER
             text_font: roboto_huge
             text: " "
         - label:
             id: weather_forecast_label
-            hidden: true
+            hidden: True
             align: CENTER
             y: 70 
             text: " "
         - label:
             id: weather_feels_like_label
-            hidden: true
+            hidden: True
             align: CENTER
             y: 130
             text: " "
         - label:
+            id: perimeter_label
+            hidden: True
+            align: CENTER
+            y: 200
+            text_align: CENTER
+            text: " "
+        - label:
             id: big_fan_icon_label
-            hidden: true
+            hidden: True
             align: CENTER
             text_font: roboto_huge
             text: " "
@@ -362,17 +409,17 @@ lvgl:
             - menu_zone_2_button
             - menu_zone_1_button
             - menu_back_button
-            - menu_power_button
+            - menu_arm_button
             - menu_mode_button
             - menu_preset_button
             - menu_fan_button
-        - lvgl.widget.focus: menu_power_button
+        - lvgl.widget.focus: menu_arm_button
       on_unload:
         - lvgl.widget.disable:
             - menu_zone_2_button
             - menu_zone_1_button
             - menu_back_button
-            - menu_power_button
+            - menu_arm_button
             - menu_mode_button
             - menu_preset_button
             - menu_fan_button
@@ -430,7 +477,7 @@ lvgl:
         - button:
             id: menu_zone_2_button
             state:
-              disabled: true
+              disabled: True
             x: 0
             y: -210
             styles: style_menu_button
@@ -450,7 +497,7 @@ lvgl:
         - button:
             id: menu_zone_1_button
             state:
-              disabled: true
+              disabled: True
             x: 105    # 210sin(30) clock coords
             y: -182   # 210cos(30)
             styles: style_menu_button
@@ -472,7 +519,7 @@ lvgl:
         - button:
             id: menu_back_button
             state:
-              disabled: true
+              disabled: True
             x: 182
             y: -105
             styles: style_menu_button
@@ -487,38 +534,29 @@ lvgl:
             on_press:
               - script.execute: goto_main_page
         - button:
-            id: menu_power_button
+            id: menu_arm_button
             state:
-              disabled: true
+              disabled: True
             x: 210
             y: 0
             styles: style_menu_button
             widgets:
               - label:
                   styles: style_menu_button_label
-                  text: "\U000F0425"
+                  text: "\U000F099D"
             on_focus:
-              - if:
-                  condition:
-                    lambda: 'return strcmp(id(hvac_mode).state.c_str(), "off") == 0;'
-                  then:
-                    lvgl.label.update:
-                      id: selected_menu_label
-                      text: "Turn On"
-                  else:
-                    lvgl.label.update:
-                      id: selected_menu_label
-                      text: "Turn Off"
+              - lvgl.label.update:
+                  id: selected_menu_label
+                  text: "Arm\nAlarm"
             on_press:
               - homeassistant.action:
-                  action: climate.toggle
+                  action: alarm_control_panel.alarm_arm_away
                   data:
-                    entity_id: ${climate_entity}
-              - script.execute: goto_main_page
+                    entity_id: ${alarm_entity}
         - button:
             id: menu_mode_button
             state:
-              disabled: true
+              disabled: True
             x: 182
             y: 105
             styles: style_menu_button
@@ -536,7 +574,7 @@ lvgl:
         - button:
             id: menu_preset_button
             state:
-              disabled: true
+              disabled: True
             x: 105
             y: 182
             styles: style_menu_button
@@ -554,7 +592,7 @@ lvgl:
         - button:
             id: menu_fan_button
             state:
-              disabled: true
+              disabled: True
             styles: style_menu_button
             x: 0
             y: 210
@@ -602,7 +640,7 @@ lvgl:
         - button:
             id: mode_back_button
             state:
-              disabled: true
+              disabled: True
             x: 105    # 210sin(30) clock coords
             y: -182   # 210cos(30)
             styles: style_menu_button
@@ -619,7 +657,7 @@ lvgl:
         - button:
             id: mode_heat_cool_button
             state:
-              disabled: true
+              disabled: True
             x: 182
             y: -105
             styles: style_menu_button
@@ -641,7 +679,7 @@ lvgl:
         - button:
             id: mode_cool_button
             state:
-              disabled: true
+              disabled: True
             x: 210
             y: 0
             styles: style_menu_button
@@ -663,7 +701,7 @@ lvgl:
         - button:
             id: mode_heat_button
             state:
-              disabled: true
+              disabled: True
             x: 182
             y: 105
             styles: style_menu_button
@@ -685,7 +723,7 @@ lvgl:
         - button:
             id: mode_fan_button
             state:
-              disabled: true
+              disabled: True
             x: 105
             y: 182
             styles: style_menu_button
@@ -707,7 +745,7 @@ lvgl:
         - button:
             id: mode_dry_button
             state:
-              disabled: true
+              disabled: True
             x: 0
             y: 210
             styles: style_menu_button
@@ -755,7 +793,7 @@ lvgl:
         - button:
             id: preset_back_button
             state:
-              disabled: true
+              disabled: True
             x: 182
             y: -105
             styles: style_menu_button
@@ -772,7 +810,7 @@ lvgl:
         - button:
             id: preset_eco_button
             state:
-              disabled: true
+              disabled: True
             x: 210
             y: 0
             styles: style_menu_button
@@ -804,7 +842,7 @@ lvgl:
         - button:
             id: preset_comfort_button
             state:
-              disabled: true
+              disabled: True
             x: 182
             y: 105
             styles: style_menu_button
@@ -836,7 +874,7 @@ lvgl:
         - button:
             id: preset_boost_button
             state:
-              disabled: true
+              disabled: True
             x: 105
             y: 182
             styles: style_menu_button
@@ -896,7 +934,7 @@ lvgl:
         - button:
             id: fan_back_button
             state:
-              disabled: true
+              disabled: True
             x: 182
             y: -105
             styles: style_menu_button
@@ -913,7 +951,7 @@ lvgl:
         - button:
             id: fan_auto_button
             state:
-              disabled: true
+              disabled: True
             x: 210
             y: 0
             styles: style_menu_button
@@ -935,7 +973,7 @@ lvgl:
         - button:
             id: fan_high_button
             state:
-              disabled: true
+              disabled: True
             x: 182
             y: 105
             styles: style_menu_button
@@ -957,7 +995,7 @@ lvgl:
         - button:
             id: fan_medium_button
             state:
-              disabled: true
+              disabled: True
             x: 105
             y: 182
             styles: style_menu_button
@@ -979,7 +1017,7 @@ lvgl:
         - button:
             id: fan_low_button
             state:
-              disabled: true
+              disabled: True
             x: 0
             y: 210
             styles: style_menu_button
@@ -999,67 +1037,105 @@ lvgl:
                     fan_mode: "low"
               - script.execute: goto_main_page
 
+    ### GUI - ALARM
+    - id: alarm_page
+      on_load:
+        - globals.set:
+            id: active_lvgl_page
+            value: '"alarm_page"'
+        - lvgl.widget.enable:
+            - alarm_keypad
+        - lvgl.widget.focus:
+            id: alarm_keypad
+            freeze: True
+            editing: True
+      on_unload:
+        - lvgl.widget.disable:
+            - alarm_keypad
+      widgets:
+        - arc:
+            id: alarm_bg
+            height: 480
+            width: 480
+            align: CENTER
+            arc_color: graylight
+            arc_opa: COVER
+            arc_width: 20
+            start_angle: 0
+            end_angle: 360
+        - label:
+            id: alarm_label
+            align: CENTER
+            y: -160
+            text: "HOME SECURITY"
+        - textarea:
+            id: alarm_pin
+            state:
+              disabled: True
+            width: 200
+            align: CENTER
+            y: -100
+            one_line: True
+            password_mode: True
+            bg_opa: TRANSP
+            # text_font: roboto_med
+            text_align: CENTER
+        - buttonmatrix:
+            id: alarm_keypad
+            state:
+              disabled: True
+            width: 300
+            height: 240
+            align: BOTTOM_MID
+            y: -55
+            bg_opa: TRANSP
+            border_opa: TRANSP
+            rows:
+              - buttons:
+                  - text: 1
+                    control:
+                      no_repeat: True
+                  - text: 2
+                    control:
+                      no_repeat: True
+                  - text: 3
+                    control:
+                      no_repeat: True
+              - buttons:
+                  - text: 4
+                    control:
+                      no_repeat: True
+                  - text: 5
+                    control:
+                      no_repeat: True
+                  - text: 6
+                    control:
+                      no_repeat: True
+              - buttons:
+                  - text: 7
+                    control:
+                      no_repeat: True
+                  - text: 8
+                    control:
+                      no_repeat: True
+                  - text: 9
+                    control:
+                      no_repeat: True
+              - buttons:
+                  - text: "\uF55A"
+                    key_code: "*"
+                    control:
+                      no_repeat: True
+                  - text: 0
+                    control:
+                      no_repeat: True
+                  - text: "\uF00C"
+                    key_code: "#"
+                    control:
+                      no_repeat: True 
+
 script:
-  - id: vibrate
-    parameters:
-      length_ms: int
-    then:
-      # XXX doesn't delay properly for short lengths (10-100ms)
-      - switch.turn_on: vibration
-      - delay: !lambda return length_ms;
-      - switch.turn_off: vibration
-
-  # navigate to pages with animation
-  - id: goto_main_page
-    then:
-      - lvgl.page.show:
-          id: main_page
-          animation: FADE_OUT
-          time: 500ms
-  - id: goto_menu_page
-    then:
-      - lvgl.page.show:
-          id: menu_page
-          animation: FADE_IN
-          time: 500ms
-  - id: goto_mode_page
-    then:
-      - lvgl.page.show:
-          id: mode_page
-          animation: FADE_IN
-          time: 500ms
-  - id: goto_preset_page
-    then:
-      - lvgl.page.show:
-          id: preset_page
-          animation: FADE_IN
-          time: 500ms
-  - id: goto_fan_page
-    then:
-      - lvgl.page.show:
-          id: fan_page
-          animation: FADE_IN
-          time: 500ms
-
   # hvac mode UI scripts
-  - id: update_menu_date_label
-    then:
-      - lvgl.label.update:
-          id: menu_date_label
-          text: !lambda |-
-            auto now = id(hass_time).now();
-            static const char * const day_names[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
-            static char buf[10];
-            snprintf(buf, sizeof(buf), "%s %02d:%02d", day_names[now.day_of_week-1], now.hour, now.minute);
-            return buf;
-  - id: update_menu_zone_temp_label
-    then:
-      - lvgl.label.update:
-          id: menu_zone_temp_label
-          text: 
-            format: "%.0f°C \U000F058E %.0f%%\n%.0f°C \U000F058E %.0f%%"
-            args: [ 'round(id(zone_2_temp).state)', 'round(id(zone_2_humidity).state)', 'round(id(zone_1_temp).state)', 'round(id(zone_1_humidity).state)' ]
-
   - id: set_mode_off
     then:
       - script.execute: hide_widgets
@@ -1074,9 +1150,6 @@ script:
           id: menu_mode_button_label
           text_color: white
           text: "\U000F0717"
-      - lvgl.widget.update:
-          id: menu_power_button
-          text_color: graydark
       - lvgl.widget.update:
           id: mode_heat_button
           text_color: white
@@ -1112,9 +1185,6 @@ script:
           text_color: mode_heat
           text: "\U000F0238"
       - lvgl.widget.update:
-          id: menu_power_button
-          text_color: white
-      - lvgl.widget.update:
           id: mode_heat_button
           text_color: mode_heat
       - lvgl.widget.update:
@@ -1148,9 +1218,6 @@ script:
           id: menu_mode_button_label
           text_color: mode_cool
           text: "\U000F0717"
-      - lvgl.widget.update:
-          id: menu_power_button
-          text_color: white
       - lvgl.widget.update:
           id: mode_heat_button
           text_color: white
@@ -1200,9 +1267,6 @@ script:
           text_color: mode_fan
           text: "\U000F0210"
       - lvgl.widget.update:
-          id: menu_power_button
-          text_color: white
-      - lvgl.widget.update:
           id: mode_heat_button
           text_color: white
       - lvgl.widget.update:
@@ -1236,9 +1300,6 @@ script:
           id: menu_mode_button_label
           text_color: mode_dry
           text: "\U000F058E"
-      - lvgl.widget.update:
-          id: menu_power_button
-          text_color: white
       - lvgl.widget.update:
           id: mode_heat_button
           text_color: white
@@ -1274,9 +1335,6 @@ script:
           text_color: mode_heat_cool
           text: "\U000F1A79"
       - lvgl.widget.update:
-          id: menu_power_button
-          text_color: white
-      - lvgl.widget.update:
           id: mode_heat_button
           text_color: white
       - lvgl.widget.update:
@@ -1292,7 +1350,94 @@ script:
           id: mode_heat_cool_button
           text_color: mode_heat_cool
 
-  # preset mode UI scripts
+  # off UI - weather and UI scripts
+  - id: update_weather_forecast_label
+    then:
+      lvgl.label.update:
+        id: weather_forecast_label
+        text: !lambda |-
+          auto low = round(id(bom_low_temp).state);
+          auto high = round(id(bom_high_temp).state);
+          auto high_tmr = round(id(bom_high_tmr_temp).state);
+          auto rain = round(id(bom_rain_chance).state);
+          static char buf[32];
+          if (!isnan(low)) {
+            snprintf(buf, sizeof(buf), "\U000F050F %.0f–%.0f°C  \U000F0597 %.0f%%", low, high, rain);
+          } else {
+            snprintf(buf, sizeof(buf), "\U000F0E03 %.0f°C  \U000F0597 %.0f%%", high_tmr, rain);
+          }
+          return buf;
+  - id: show_widgets
+    then:
+      - lvgl.widget.show:
+        - current_temp_arc
+        - set_temp_roller
+        - celsius_label
+        - fan_icon_label
+        - current_temp_label
+        - zone_1_label
+        - zone_2_label
+        - meter_ticks
+        - mode_label
+      - lvgl.widget.hide:
+        - big_fan_icon_label
+        - weather_icon_label
+        - weather_temp_label
+        - weather_forecast_label
+        - weather_feels_like_label
+        - perimeter_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: COVER
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: COVER
+  - id: hide_widgets
+    then:
+      - lvgl.widget.hide:
+        - big_fan_icon_label
+        - current_temp_arc
+        - set_temp_roller
+        - celsius_label
+        - fan_icon_label
+        - current_temp_label
+        - zone_1_label
+        - zone_2_label
+        - meter_ticks
+        - mode_label
+      - lvgl.widget.show:
+        - weather_icon_label
+        - weather_temp_label
+        - weather_forecast_label
+        - weather_feels_like_label
+        - perimeter_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: TRANSP
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: TRANSP
+
+  # menu UI - date and temps
+  - id: update_menu_date_label
+    then:
+      - lvgl.label.update:
+          id: menu_date_label
+          text: !lambda |-
+            auto now = id(hass_time).now();
+            static const char * const day_names[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            static char buf[10];
+            snprintf(buf, sizeof(buf), "%s %02d:%02d", day_names[now.day_of_week-1], now.hour, now.minute);
+            return buf;
+  - id: update_menu_zone_temp_label
+    then:
+      - lvgl.label.update:
+          id: menu_zone_temp_label
+          text: 
+            format: "%.0f°C \U000F058E %.0f%%\n%.0f°C \U000F058E %.0f%%"
+            args: [ 'round(id(zone_2_temp).state)', 'round(id(zone_2_humidity).state)', 'round(id(zone_1_temp).state)', 'round(id(zone_1_humidity).state)' ]
+
+  # preset UI scripts
   - id: set_preset_none
     then:
       - lvgl.label.update:
@@ -1434,68 +1579,126 @@ script:
           id: menu_zone_2_button
           text_color: graydark
 
-  # OFF mode weather UI scripts
-  - id: update_weather_forecast_label
+  # alarm UI
+  - id: update_alarm_disarmed
     then:
-      lvgl.label.update:
-        id: weather_forecast_label
-        text: !lambda |-
-          auto low = round(id(bom_low_temp).state);
-          auto high = round(id(bom_high_temp).state);
-          auto rain = round(id(bom_rain_chance).state);
-          static char buf[32];
-          if (!isnan(low)) {
-            snprintf(buf, sizeof(buf), "\U000F0E03 %.0f–%.0f°C  \U000F0597 %.0f%%", low, high, rain);
-          } else {
-            snprintf(buf, sizeof(buf), "\U000F0E03 %.0f°C  \U000F0597 %.0f%%", high, rain);
-          }
-          return buf;
+      - lvgl.label.update:
+          id: alarm_label
+          text: "DISARMED"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: graylight
+      - light.turn_off: rgb_ring
+      - script.execute: goto_main_page
+  - id: update_alarm_arming
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMING"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Arming"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: deep_orange
+      - script.execute: goto_alarm_page
+  - id: update_alarm_armed
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMED"
+      - light.turn_off: rgb_ring
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.000
+          blue:  0.000
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+  - id: update_alarm_pending
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMED"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Pending"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+  - id: update_alarm_disarming
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "DISARMING"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Pending"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+  - id: update_alarm_triggered
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ALARM!"
+      - lvgl.widget.update:
+          id: alarm_bg
+          bg_color: red
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Police"
+      - script.execute: goto_alarm_page
 
-  - id: show_widgets
+  # navigate to pages with animation
+  - id: goto_main_page
     then:
-      - lvgl.widget.show:
-        - current_temp_arc
-        - set_temp_roller
-        - celsius_label
-        - fan_icon_label
-        - current_temp_label
-        - zone_1_label
-        - zone_2_label
-        - meter_ticks
-        - mode_label
-      - lvgl.widget.hide:
-        - big_fan_icon_label
-        - weather_icon_label
-        - weather_temp_label
-        - weather_forecast_label
-        - weather_feels_like_label
-      - lvgl.indicator.update:
-          id: set_temp_needle
-          opa: COVER
-      - lvgl.indicator.update:
-          id: diff_temp_arc
-          opa: COVER
-  - id: hide_widgets
+      - lvgl.page.show:
+          id: main_page
+          animation: FADE_OUT
+          time: 500ms
+  - id: goto_menu_page
     then:
-      - lvgl.widget.hide:
-        - big_fan_icon_label
-        - current_temp_arc
-        - set_temp_roller
-        - celsius_label
-        - fan_icon_label
-        - current_temp_label
-        - zone_1_label
-        - zone_2_label
-        - meter_ticks
-        - mode_label
-      - lvgl.widget.show:
-        - weather_icon_label
-        - weather_temp_label
-        - weather_forecast_label
-        - weather_feels_like_label
-      - lvgl.indicator.update:
-          id: set_temp_needle
-          opa: TRANSP
-      - lvgl.indicator.update:
-          id: diff_temp_arc
-          opa: TRANSP
+      - lvgl.page.show:
+          id: menu_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_mode_page
+    then:
+      - lvgl.page.show:
+          id: mode_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_preset_page
+    then:
+      - lvgl.page.show:
+          id: preset_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_fan_page
+    then:
+      - lvgl.page.show:
+          id: fan_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_alarm_page
+    then:
+      - lvgl.page.show:
+          id: alarm_page
+          animation: FADE_IN
+          time: 500ms
+
+  - id: vibrate
+    parameters:
+      length_ms: int
+    then:
+      # XXX doesn't delay properly for short lengths (10-100ms)
+      - switch.turn_on: vibration
+      - delay: !lambda return length_ms;
+      - switch.turn_off: vibration
+

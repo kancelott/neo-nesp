@@ -14,21 +14,22 @@ substitutions:
   weather_entity: weather.bom_melbourne
   weather_feels_like_entity: sensor.bom_melbourne_temp_feels_like
   weather_high_entity: sensor.bom_melbourne_temp_max_0
+  weather_high_tmr_entity: sensor.bom_melbourne_temp_max_1
   weather_low_entity: sensor.bom_melbourne_temp_min_0
   weather_rain_chance_entity: sensor.bom_melbourne_rain_chance_0
   zone_1_temperature_entity: sensor.xiaomi_temp_1_temperature
   zone_1_humidity_entity: sensor.xiaomi_temp_1_humidity
   zone_2_temperature_entity: sensor.xiaomi_temp_2_temperature
   zone_2_humidity_entity: sensor.xiaomi_temp_2_humidity
+  perimeter_entity: sensor.perimeter_trigger
+  alarm_entity: alarm_control_panel.alarmo
 
 external_components:
-  - source: github://pr#7472
-    components: [ lvgl ]
   - source:
       type: git
       url: https://github.com/esphome/esphome
       ref: dev
-    components: [ st7701s ]
+    components: [ lvgl ]
 
 esphome:
   name: ${hostname}
@@ -89,6 +90,96 @@ light:
     rmt_channel: 0
     rgb_order: GRB
     chipset: WS2812
+    effects:
+      - strobe:
+          name: Pending
+          colors:
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 1000ms
+            - state: False
+              duration: 500ms
+      - strobe:
+          name: Arming
+          colors:
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.572
+              blue:  0.000
+              duration: 1000ms
+            - state: False
+              duration: 500ms
+      - strobe:
+          name: Police
+          colors:
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   0.000
+              green: 0.000
+              blue:  1.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   0.000
+              green: 0.000
+              blue:  1.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   0.000
+              green: 0.000
+              blue:  1.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   0.000
+              green: 0.000
+              blue:  1.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
 
 switch:
   ### VIBRATION MOTOR
@@ -205,15 +296,6 @@ sensor:
     on_value:
       - light.turn_on: backlight
       - if:
-          condition:
-            # turn ON when when on main page and OFF
-            lambda: 'return strcmp(id(active_lvgl_page).c_str(), "main_page") == 0 && strcmp(id(hvac_mode).state.c_str(), "off") == 0;'
-          then:
-            - homeassistant.action:
-                action: climate.turn_on
-                data:
-                  entity_id: ${climate_entity}
-      - if:
           condition: lvgl.is_paused
           then:
             - lvgl.resume:
@@ -324,6 +406,14 @@ sensor:
   - platform: homeassistant
     entity_id: ${weather_high_entity}
     id: bom_high_temp
+    internal: true
+    on_value:
+      - script.execute: update_weather_forecast_label
+
+  ### HASS - BoM forecast high temp tmr
+  - platform: homeassistant
+    entity_id: ${weather_high_tmr_entity}
+    id: bom_high_tmr_temp
     internal: true
     on_value:
       - script.execute: update_weather_forecast_label
@@ -458,13 +548,7 @@ text_sensor:
             id(unset_zone_2).execute();
           }
 
-  ### HASS - BoM weather
-  - platform: homeassistant
-    entity_id: ${weather_entity}
-    id: bom_weather
-    internal: true
-
-  ### HASS - BoM icon
+  ### HASS - BoM weather icon
   - platform: homeassistant
     entity_id: ${weather_entity}
     id: bom_icon
@@ -551,6 +635,50 @@ text_sensor:
             } else {
               return "";
             }
+
+  ### HASS - Perimeter Trigger
+  - platform: homeassistant
+    entity_id: ${perimeter_entity}
+    id: perimeter
+    internal: true
+    on_value:
+      - if:
+          condition:
+            lambda: 'return x.compare("") == 0;'
+          then:
+            - lvgl.label.update:
+                id: perimeter_label
+                text_color: white
+                text: " "
+          else:
+            - lvgl.label.update:
+                id: perimeter_label
+                text_color: red
+                text: !lambda |-
+                  static char buf[32];
+                  snprintf(buf, sizeof(buf), "\U000F081C %s", x.c_str());
+                  return buf;
+
+    ### HASS - Alarm
+  - platform: homeassistant
+    entity_id: ${alarm_entity}
+    id: alarm_state
+    internal: true
+    on_value:
+    - lambda: |-
+        if (x.compare("disarmed") == 0) {
+          id(update_alarm_disarmed).execute();
+        } else if (x.compare("arming") == 0) {
+          id(update_alarm_arming).execute();
+        } else if (x.compare("armed_away") == 0 || x.compare("armed_home") == 0 || x.compare("armed_night") == 0 || x.compare("armed_vacation") == 0 || x.compare("armed_custom_bypass") == 0) {
+          id(update_alarm_armed).execute();
+        } else if (x.compare("pending") == 0) {
+          id(update_alarm_pending).execute();
+        } else if (x.compare("disarming") == 0) {
+          id(update_alarm_disarming).execute();
+        } else if (x.compare("triggered") == 0) {
+          id(update_alarm_triggered).execute();
+        }
 
   - platform: debug
     reset_reason:
