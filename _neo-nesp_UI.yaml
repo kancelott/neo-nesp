@@ -616,6 +616,7 @@ lvgl:
             value: '"mode_page"'
         - lvgl.widget.enable:
             - mode_back_button
+            - mode_off_button
             - mode_heat_cool_button
             - mode_cool_button
             - mode_heat_button
@@ -625,6 +626,7 @@ lvgl:
       on_unload:
         - lvgl.widget.disable:
             - mode_back_button
+            - mode_off_button
             - mode_heat_cool_button
             - mode_cool_button
             - mode_heat_button
@@ -641,8 +643,8 @@ lvgl:
             id: mode_back_button
             state:
               disabled: True
-            x: 105    # 210sin(30) clock coords
-            y: -182   # 210cos(30)
+            x: 0
+            y: -210
             styles: style_menu_button
             widgets:
               - label:
@@ -654,6 +656,35 @@ lvgl:
                   text: "Back"
             on_press:
               - script.execute: goto_menu_page
+        - button:
+            id: mode_off_button
+            state:
+              disabled: True
+            x: 105    # 210sin(30) clock coords
+            y: -182   # 210cos(30)
+            styles: style_menu_button
+            widgets:
+              - label:
+                  styles: style_menu_button_label
+                  text: "\U000F0425"
+            on_focus:
+              - if:
+                  condition:
+                    lambda: 'return strcmp(id(hvac_mode).state.c_str(), "off") == 0;'
+                  then:
+                    lvgl.label.update:
+                      id: selected_mode_label
+                      text: "Turn On"
+                  else:
+                    lvgl.label.update:
+                      id: selected_mode_label
+                      text: "Turn Off"
+            on_press:
+              - homeassistant.action:
+                  action: climate.toggle
+                  data:
+                    entity_id: ${climate_entity}
+              - script.execute: goto_main_page
         - button:
             id: mode_heat_cool_button
             state:
@@ -1047,8 +1078,8 @@ lvgl:
             - alarm_keypad
         - lvgl.widget.focus:
             id: alarm_keypad
-            freeze: True
             editing: True
+            freeze: True
       on_unload:
         - lvgl.widget.disable:
             - alarm_keypad
@@ -1078,7 +1109,6 @@ lvgl:
             one_line: True
             password_mode: True
             bg_opa: TRANSP
-            # text_font: roboto_med
             text_align: CENTER
         - buttonmatrix:
             id: alarm_keypad
@@ -1090,6 +1120,13 @@ lvgl:
             y: -55
             bg_opa: TRANSP
             border_opa: TRANSP
+            # XXX this doesn't seem to work
+            focused:
+              outline_width: 0
+            items:
+              focused:
+                outline_color: blue
+                outline_width: 3
             rows:
               - buttons:
                   - text: 1
@@ -1132,7 +1169,7 @@ lvgl:
                   - text: "\uF00C"
                     key_code: "#"
                     control:
-                      no_repeat: True 
+                      no_repeat: True
 
 script:
   # hvac mode UI scripts
