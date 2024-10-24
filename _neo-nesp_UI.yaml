@@ -1,7 +1,7 @@
 # neo-nesp UI
 
 packages:
-  colors: !include neo-nesp/colors/HOMEASSISTANT
+  colors: !include colors/HOMEASSISTANT
 
 font:
   - file: 'gfonts://Roboto@400'
@@ -11,7 +11,7 @@ font:
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+      - file: "fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F050F", # mdi:thermometer
           "\U000F058E", # mdi:water-percent
@@ -54,7 +54,7 @@ font:
           "\U000F059D", # mdi:weather-windy (wind, windy)
           "\U000F0592", # mdi:weather-hail
           ]
-      - file: "neo-nesp/fonts/FontAwesome5-Solid+Brands+Regular.woff"
+      - file: "fonts/FontAwesome5-Solid+Brands+Regular.woff"
         glyphs: [
           "\uF00C", # checkmark
           "\uF55A", # backspace
@@ -67,7 +67,7 @@ font:
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+      - file: "fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F050F", # mdi:thermometer
           "\U000F058E", # mdi:water-percent
@@ -118,7 +118,7 @@ font:
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+      - file: "fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F171D", # mdi:fan-auto
           "\U000F1472", # mdi:fan-speed-1
