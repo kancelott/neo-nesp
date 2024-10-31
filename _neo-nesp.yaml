@@ -156,19 +156,23 @@ time:
   - platform: homeassistant
     id: hass_time
     on_time:
-      - seconds: 0
-        then:
-          - script.execute: update_menu_date_label
       - hours: 2,3,4,5
-        minutes: 1
+        minutes: 0
         seconds: 0
         then:
           - switch.turn_on: switch_antiburn
       - hours: 2,3,4,5
-        minutes: 46
+        minutes: 45
         seconds: 0
         then:
           - switch.turn_off: switch_antiburn
+      - seconds: 0
+        then:
+          - script.execute: update_menu_date_label
+      - minutes: 0
+        seconds: 0
+        then:
+          - script.execute: update_weather_forecast_label
       - hours: 0
         minutes: 0
         seconds: 0
@@ -176,6 +180,9 @@ time:
         months: 3,6,9,12
         then:
           - script.execute: set_weather_bg
+    on_time_sync:
+      then:
+        - script.execute: set_weather_bg
 
 binary_sensor:
   ### CENTRE PUSH BUTTON
