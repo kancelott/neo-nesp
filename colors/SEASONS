@@ -1,0 +1,39 @@
+  - id: autumn
+    direction: VER
+    dither: err_diff
+    stops:
+      - color: 0x751a33
+        position: 0
+      - color: 0xd28f33
+        position: 255
+
+  - id: winter
+    direction: VER
+    dither: err_diff
+    stops:
+      - color: 0x03045e
+        position: 0
+      - color: 0x26b3d0
+        position: 255
+
+  - id: spring
+    direction: VER
+    dither: err_diff
+    stops:
+      - color: 0xffc8dd
+        position: 0
+      - color: 0xe8e8e4
+        position: 128
+      - color: 0xbde0fe
+        position: 255
+
+  - id: summer
+    direction: VER
+    dither: err_diff
+    stops:
+      - color: 0xfcf3c4
+        position: 0
+      - color: 0xffb05c
+        position: 128
+      - color: 0xffd3d3
+        position: 255

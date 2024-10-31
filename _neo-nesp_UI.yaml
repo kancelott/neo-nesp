@@ -11,7 +11,7 @@ font:
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "fonts/materialdesignicons-webfont.ttf"
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F050F", # mdi:thermometer
           "\U000F058E", # mdi:water-percent
@@ -54,7 +54,7 @@ font:
           "\U000F059D", # mdi:weather-windy (wind, windy)
           "\U000F0592", # mdi:weather-hail
           ]
-      - file: "fonts/FontAwesome5-Solid+Brands+Regular.woff"
+      - file: "neo-nesp/fonts/FontAwesome5-Solid+Brands+Regular.woff"
         glyphs: [
           "\uF00C", # checkmark
           "\uF55A", # backspace
@@ -67,7 +67,7 @@ font:
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "fonts/materialdesignicons-webfont.ttf"
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F050F", # mdi:thermometer
           "\U000F058E", # mdi:water-percent
@@ -118,7 +118,7 @@ font:
     bpp: 4
     extras:
       # https://pictogrammers.github.io
-      - file: "fonts/materialdesignicons-webfont.ttf"
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F171D", # mdi:fan-auto
           "\U000F1472", # mdi:fan-speed-1
@@ -198,7 +198,7 @@ lvgl:
       align: CENTER
       y: 3
       text_font: roboto_med
-
+  gradients: !include colors/SEASONS
   pages:
     ### GUI - THERMOSTAT
     - id: main_page
@@ -269,8 +269,8 @@ lvgl:
                     r_mod: 10
         - obj:
             id: mode_bg
-            height: 350
             width: 350
+            height: 350
             radius: 175
             align: CENTER
             border_width: 0
@@ -334,6 +334,14 @@ lvgl:
             align: CENTER
             y: -100
             text: "NESP"
+        - obj:
+            id: weather_bg
+            width: 480
+            height: 480
+            radius: 240
+            align: CENTER
+            border_width: 0
+            bg_opa: TRANSP
         - label:
             id: weather_icon_label
             hidden: True
@@ -357,7 +365,7 @@ lvgl:
             id: weather_feels_like_label
             hidden: True
             align: CENTER
-            y: 130
+            y: 120
             text: " "
         - label:
             id: perimeter_label
@@ -1115,18 +1123,19 @@ lvgl:
             state:
               disabled: True
             width: 300
-            height: 240
+            height: 250
             align: BOTTOM_MID
             y: -55
             bg_opa: TRANSP
             border_opa: TRANSP
             # XXX this doesn't seem to work
-            focused:
+            edited:
               outline_width: 0
             items:
-              focused:
-                outline_color: blue
+              edited:
+                outline_color: pure_cyan
                 outline_width: 3
+                outline_pad: 3
             rows:
               - buttons:
                   - text: 1
@@ -1407,6 +1416,7 @@ script:
   - id: show_widgets
     then:
       - lvgl.widget.show:
+        - arc_bg
         - current_temp_arc
         - set_temp_roller
         - celsius_label
@@ -1416,6 +1426,15 @@ script:
         - zone_2_label
         - meter_ticks
         - mode_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: COVER
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: COVER
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_opa: COVER
       - lvgl.widget.hide:
         - big_fan_icon_label
         - weather_icon_label
@@ -1423,16 +1442,14 @@ script:
         - weather_forecast_label
         - weather_feels_like_label
         - perimeter_label
-      - lvgl.indicator.update:
-          id: set_temp_needle
-          opa: COVER
-      - lvgl.indicator.update:
-          id: diff_temp_arc
-          opa: COVER
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_opa: TRANSP
   - id: hide_widgets
     then:
       - lvgl.widget.hide:
         - big_fan_icon_label
+        - arc_bg
         - current_temp_arc
         - set_temp_roller
         - celsius_label
@@ -1442,18 +1459,24 @@ script:
         - zone_2_label
         - meter_ticks
         - mode_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: TRANSP
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: TRANSP
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_opa: TRANSP
       - lvgl.widget.show:
         - weather_icon_label
         - weather_temp_label
         - weather_forecast_label
         - weather_feels_like_label
         - perimeter_label
-      - lvgl.indicator.update:
-          id: set_temp_needle
-          opa: TRANSP
-      - lvgl.indicator.update:
-          id: diff_temp_arc
-          opa: TRANSP
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_opa: COVER
 
   # menu UI - date and temps
   - id: update_menu_date_label
@@ -1729,6 +1752,88 @@ script:
           id: alarm_page
           animation: FADE_IN
           time: 500ms
+
+  - id: set_weather_bg
+    then:
+      - lambda: |-
+          auto now = id(hass_time).now();
+          if (now.month >= 3 && now.month <= 5) {
+            id(set_weather_bg_autumn).execute();
+          } else if (now.month >= 6 && now.month <= 8) {
+            id(set_weather_bg_winter).execute();
+          } else if (now.month >= 9 && now.month <= 11) {
+            id(set_weather_bg_spring).execute();
+          } else if (now.month == 12 || now.month <= 2) {
+            id(set_weather_bg_summer).execute();
+          }
+  - id: set_weather_bg_autumn
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: autumn
+      - lvgl.label.update:
+          id: weather_icon_label
+          text_color: white
+      - lvgl.label.update:
+          id: weather_temp_label
+          text_color: white
+      - lvgl.label.update:
+          id: weather_forecast_label
+          text_color: white
+      - lvgl.label.update:
+          id: weather_feels_like_label
+          text_color: white
+  - id: set_weather_bg_winter
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: winter
+      - lvgl.label.update:
+          id: weather_icon_label
+          text_color: white
+      - lvgl.label.update:
+          id: weather_temp_label
+          text_color: white
+      - lvgl.label.update:
+          id: weather_forecast_label
+          text_color: white
+      - lvgl.label.update:
+          id: weather_feels_like_label
+          text_color: white
+  - id: set_weather_bg_spring
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: spring
+      - lvgl.label.update:
+          id: weather_icon_label
+          text_color: black
+      - lvgl.label.update:
+          id: weather_temp_label
+          text_color: black
+      - lvgl.label.update:
+          id: weather_forecast_label
+          text_color: black
+      - lvgl.label.update:
+          id: weather_feels_like_label
+          text_color: black
+  - id: set_weather_bg_summer
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: summer
+      - lvgl.label.update:
+          id: weather_icon_label
+          text_color: black
+      - lvgl.label.update:
+          id: weather_temp_label
+          text_color: black
+      - lvgl.label.update:
+          id: weather_forecast_label
+          text_color: black
+      - lvgl.label.update:
+          id: weather_feels_like_label
+          text_color: black
 
   - id: vibrate
     parameters:
