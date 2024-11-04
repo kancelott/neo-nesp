@@ -166,23 +166,21 @@ time:
         seconds: 0
         then:
           - switch.turn_off: switch_antiburn
-      - seconds: 0
-        then:
-          - script.execute: update_menu_date_label
-      - minutes: 0
+      - hours: 0
+        minutes: 0
         seconds: 0
         then:
-          - script.execute: update_weather_forecast_label
+          - script.execute: update_menu_date_label
       - hours: 0
         minutes: 0
         seconds: 0
         days_of_month: 1
         months: 3,6,9,12
         then:
-          - script.execute: set_weather_bg
+          - script.execute: set_season_bg
     on_time_sync:
       then:
-        - script.execute: set_weather_bg
+        - script.execute: set_season_bg
 
 binary_sensor:
   ### CENTRE PUSH BUTTON
@@ -320,11 +318,27 @@ sensor:
     attribute: current_humidity
     internal: true
 
-  ### HASS - BoM temperature
+  ### HASS - ZONE 1 TEMPERATURE
+  - platform: homeassistant
+    entity_id: ${zone_1_temp_entity}
+    id: zone_1_temp
+    internal: true
+    on_value:
+      - script.execute: update_zone_temp_label
+
+  ### HASS - ZONE 2 TEMPERATURE
+  - platform: homeassistant
+    entity_id: ${zone_2_temp_entity}
+    id: zone_2_temp
+    internal: true
+    on_value:
+      - script.execute: update_zone_temp_label
+
+  ### HASS BoM - temperature
   - platform: homeassistant
     entity_id: ${weather_entity}
-    id: bom_temp
     attribute: temperature
+    id: bom_temp
     internal: true
     on_value:
       - lvgl.label.update:
@@ -332,87 +346,50 @@ sensor:
           text:
             format: "%.0f°C"
             args: [ 'round(x)' ]
-      - lvgl.label.update:
-          id: menu_weather_label
-          text: 
-            format: "%.0f°C"
-            args: [ 'round(id(bom_temp).state)']
 
-  ### HASS - BoM feels like temperature
+  ### HASS BoM - now temp
   - platform: homeassistant
-    entity_id: ${weather_feels_like_entity}
+    entity_id: ${weather_now_temp}
+    id: bom_now_temp
+    internal: true
+    on_value:
+      - script.execute: update_weather_now_later_label
+
+  ### HASS BoM - later temp
+  - platform: homeassistant
+    entity_id: ${weather_later_temp}
+    id: bom_later_temp
+    internal: true
+    on_value:
+      - script.execute: update_weather_now_later_label
+
+  ### HASS BoM - feels like temperature
+  - platform: homeassistant
+    entity_id: ${weather_feels_like}
     id: bom_feels_like
     internal: true
     on_value:
       - lvgl.label.update:
-          id: weather_feels_like_label
+          id: menu_weather_feels_like_label
           text:
-            format: "Feels like %.0f°C"
+            format: "feels %.0f°C"
             args: [ 'round(x)' ]
 
-  ### HASS - BoM forecast high temp
+  ### HASS BoM - forecast tomorrow low
   - platform: homeassistant
-    entity_id: ${weather_high_entity}
-    id: bom_high_temp
+    entity_id: ${weather_tomorrow_temp_low}
+    id: bom_tmr_temp_low
     internal: true
     on_value:
-      - script.execute: update_weather_forecast_label
+      - script.execute: update_weather_tmr_label
 
-  ### HASS - BoM forecast high temp tmr
+  ### HASS BoM - forecast tomorrow high
   - platform: homeassistant
-    entity_id: ${weather_high_tmr_entity}
-    id: bom_high_tmr_temp
+    entity_id: ${weather_tomorrow_temp_high}
+    id: bom_tmr_temp_high
     internal: true
     on_value:
-      - script.execute: update_weather_forecast_label
-
-  ### HASS - BoM forecast low temp
-  - platform: homeassistant
-    entity_id: ${weather_low_entity}
-    id: bom_low_temp
-    internal: true
-    on_value:
-      - script.execute: update_weather_forecast_label
-
-  ### HASS - BoM forecast rain change
-  - platform: homeassistant
-    entity_id: ${weather_rain_chance_entity}
-    id: bom_rain_chance
-    internal: true
-    on_value:
-      - script.execute: update_weather_forecast_label
-
-  ### HASS - Zone 1 temperature
-  - platform: homeassistant
-    entity_id: ${zone_1_temperature_entity}
-    id: zone_1_temp
-    internal: true
-    on_value:
-      - script.execute: update_menu_zone_temp_label
-
-  ### HASS - Zone 1 humidity
-  - platform: homeassistant
-    entity_id: ${zone_1_humidity_entity}
-    id: zone_1_humidity
-    internal: true
-    on_value:
-      - script.execute: update_menu_zone_temp_label
-
-  ### HASS - Zone 2 temperature
-  - platform: homeassistant
-    entity_id: ${zone_2_temperature_entity}
-    id: zone_2_temp
-    internal: true
-    on_value:
-      - script.execute: update_menu_zone_temp_label
-
-  ### HASS - Zone 2 humidity
-  - platform: homeassistant
-    entity_id: ${zone_2_humidity_entity}
-    id: zone_2_humidity
-    internal: true
-    on_value:
-      - script.execute: update_menu_zone_temp_label
+      - script.execute: update_weather_tmr_label
 
 text_sensor:
   ### HASS - HVAC MODE
@@ -496,116 +473,89 @@ text_sensor:
             id(unset_zone_2).execute();
           }
 
-  ### HASS - BoM weather icon
+  ### HASS BoM - weather text
+  - platform: homeassistant
+    entity_id: ${weather_text}
+    id: bom_text
+    internal: true
+    filters:
+      #- to_upper:
+      - substitute:
+        - ". -> "
+    on_value:
+      - lvgl.label.update:
+          id: weather_text_label
+          text: !lambda 'return x.c_str();'
+
+  ### HASS BoM - weather icon
   - platform: homeassistant
     entity_id: ${weather_entity}
-    id: bom_icon
     attribute: icon
+    id: bom_icon
     internal: true
     on_value:
-      - lvgl.label.update:
-          id: weather_icon_label
-          text: !lambda |-
-            if (x.compare("mdi:weather-night") == 0) {
-              return "\U000F0594";
-            } else if (x.compare("mdi:weather-cloudy") == 0) {
-              return "\U000F0590";
-            } else if (x.compare("mdi:weather-hurricane") == 0) {
-              return "\U000F0898";
-            } else if (x.compare("mdi:weather-hazy") == 0) {
-              return "\U000F0F30";
-            } else if (x.compare("mdi:weather-fog") == 0) {
-              return "\U000F0F91";
-            } else if (x.compare("mdi:snowflake-melt") == 0) {
-              return "\U000F12CB";
-            } else if (x.compare("mdi:weather-pouring") == 0) {
-              return "\U000F0596";
-            } else if (x.compare("mdi:weather-partly-rainy") == 0) {
-              return "\U000F0F33";
-            } else if (x.compare("mdi:weather-light-showers") == 0) {
-              return "\U000F0F33";    // mdi:partly-rainy, mdi:light-showers doesn't exist?
-            } else if (x.compare("mdi:weather-sunny") == 0) {
-              return "\U000F0599";
-            } else if (x.compare("mdi:weather-partly-cloudy") == 0) {
-              return "\U000F0595";
-            } else if (x.compare("mdi:weather-rainy") == 0) {
-              return "\U000F0597";
-            } else if (x.compare("mdi:weather-snowy") == 0) {
-              return "\U000F0598";
-            } else if (x.compare("mdi:weather-lightning") == 0) {
-              return "\U000F0593";    // not in BoM integration code last time I checked
-            } else if (x.compare("mdi:weather-lightning-rainy") == 0) {
-              return "\U000F0593";    // override with mdi:lightning
-            } else if (x.compare("mdi:weather-windy") == 0) {
-              return "\U000F059D";
-            } else if (x.compare("mdi:weather-hail") == 0) {
-              return "\U000F0592";    // not in BoM integration code last time I checked
-            } else {
-              return "";
-            }
-      - lvgl.label.update:
-          id: menu_weather_icon_label
-          text: !lambda |-
-            if (x.compare("mdi:weather-night") == 0) {
-              return "\U000F0594";
-            } else if (x.compare("mdi:weather-cloudy") == 0) {
-              return "\U000F0590";
-            } else if (x.compare("mdi:weather-hurricane") == 0) {
-              return "\U000F0898";
-            } else if (x.compare("mdi:weather-hazy") == 0) {
-              return "\U000F0F30";
-            } else if (x.compare("mdi:weather-fog") == 0) {
-              return "\U000F0F91";
-            } else if (x.compare("mdi:snowflake-melt") == 0) {
-              return "\U000F12CB";
-            } else if (x.compare("mdi:weather-pouring") == 0) {
-              return "\U000F0596";
-            } else if (x.compare("mdi:weather-partly-rainy") == 0) {
-              return "\U000F0F33";
-            } else if (x.compare("mdi:weather-light-showers") == 0) {
-              return "\U000F0F33";    // mdi:partly-rainy, mdi:light-showers doesn't exist?
-            } else if (x.compare("mdi:weather-sunny") == 0) {
-              return "\U000F0599";
-            } else if (x.compare("mdi:weather-partly-cloudy") == 0) {
-              return "\U000F0595";
-            } else if (x.compare("mdi:weather-rainy") == 0) {
-              return "\U000F0597";
-            } else if (x.compare("mdi:weather-snowy") == 0) {
-              return "\U000F0598";
-            } else if (x.compare("mdi:weather-lightning") == 0) {
-              return "\U000F0593";    // not in BoM integration code last time I checked
-            } else if (x.compare("mdi:weather-lightning-rainy") == 0) {
-              return "\U000F0593";    // override with mdi:lightning
-            } else if (x.compare("mdi:weather-windy") == 0) {
-              return "\U000F059D";
-            } else if (x.compare("mdi:weather-hail") == 0) {
-              return "\U000F0592";    // not in BoM integration code last time I checked
-            } else {
-              return "";
-            }
+      - script.execute: update_weather_icon_label
 
-  ### HASS - Perimeter Trigger
+  ### HASS BoM - now temp label
   - platform: homeassistant
-    entity_id: ${perimeter_entity}
-    id: perimeter
+    entity_id: ${weather_now_label}
+    id: bom_now_label
     internal: true
     on_value:
-      - if:
-          condition:
-            lambda: 'return x.compare("") == 0;'
-          then:
-            - lvgl.label.update:
-                id: perimeter_label
-                text_color: white
-                text: " "
-          else:
-            - lvgl.label.update:
-                id: perimeter_label
-                text_color: red
-                text: !lambda |-
-                  static char buf[32];
-                  snprintf(buf, sizeof(buf), "\U000F081C %s", x.c_str());
-                  return buf;
+      - script.execute: update_weather_now_later_label
+
+  ### HASS BoM - later temp label
+  - platform: homeassistant
+    entity_id: ${weather_later_label}
+    id: bom_later_label
+    internal: true
+    on_value:
+      - script.execute: update_weather_now_later_label
+
+  ### HASS BoM - rain
+  - platform: homeassistant
+    entity_id: ${weather_rain}
+    id: bom_rain
+    internal: true
+    on_value:
+      - lvgl.label.update:
+          id: menu_weather_rain_label
+          text:
+            format: "\U000F0596 %smm"
+            args: [ 'x.c_str()' ]
+
+  ### HASS BoM - UV category
+  - platform: homeassistant
+    entity_id: ${weather_uv_category}
+    id: bom_uv_category
+    internal: true
+    filters:
+      - to_lower:
+    on_value:
+      - lvgl.label.update:
+          id: menu_weather_uv_label
+          text:
+            format: "\U000F1A45 UV %s"
+            args: [ 'x.c_str()' ]
+
+  ### HASS BoM - weather tomorrow text
+  - platform: homeassistant
+    entity_id: ${weather_tomorrow_text}
+    id: bom_tmr_text
+    internal: true
+    filters:
+      - substitute:
+        - ". -> ''"
+    on_value:
+      - script.execute: update_weather_tmr_label
+
+  ### HASS BoM - weather tomorrow icon
+  - platform: homeassistant
+    entity_id: ${weather_tomorrow_icon}
+    id: bom_tmr_icon
+    internal: true
+    on_value:
+      - script.execute: update_weather_tmr_label
 
     ### HASS - Alarm
   - platform: homeassistant
@@ -628,6 +578,27 @@ text_sensor:
           id(update_alarm_triggered).execute();
         }
 
+  ### HASS - Perimeter Trigger
+  - platform: homeassistant
+    entity_id: ${perimeter_entity}
+    id: perimeter
+    internal: true
+    on_value:
+      - if:
+          condition:
+            lambda: 'return x.compare("") == 0;'
+          then:
+            - lvgl.label.update:
+                id: perimeter_label
+                text: " "
+          else:
+            - lvgl.label.update:
+                id: perimeter_label
+                text: !lambda |-
+                  static char buf[40];
+                  snprintf(buf, sizeof(buf), "  \U000F081C %s  ", x.c_str());
+                  return buf;
+
   - platform: debug
     reset_reason:
       name: Reset Reason
@@ -648,7 +619,7 @@ display:
     data_rate: 10MHz
     color_order: RGB
     auto_clear_enabled: false
-    update_interval: never
+    update_interval: 1h
     dimensions:
       width: 480
       height: 480
@@ -734,7 +705,6 @@ display:
       # - delay 120ms
       # - [0x29]                                  # DISPLAY_ON (already in esphome)
       # - delay 20ms
-      #
 
 <<: !include _neo-nesp_UI.yaml
-
+<<: !include _neo-nesp_UI-scripts.yaml
