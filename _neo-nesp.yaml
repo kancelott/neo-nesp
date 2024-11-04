@@ -604,6 +604,19 @@ text_sensor:
       name: Reset Reason
       disabled_by_default: True
 
+number:
+  - platform: template
+    name: Display timeout
+    optimistic: true
+    id: display_timeout
+    unit_of_measurement: "s"
+    initial_value: 1800
+    restore_value: true
+    min_value: 30
+    max_value: 3600
+    step: 5
+    mode: box
+
 spi:
   ### DISPLAY
   clk_pin:

@@ -183,10 +183,15 @@ lvgl:
   encoders:
     enter_button: push_button
     sensor: rotary
-  bg_color: black
+  on_idle:
+    timeout: !lambda "return (id(display_timeout).state * 1000);"
+    then:
+      - script.execute: goto_main_page
   scrollbar_mode: "OFF"
   default_font: roboto_reg
+  bg_color: black
   text_color: white
+  gradients: !include colors/SEASONS
   style_definitions:
     - id: style_menu_button
       align: CENTER
@@ -199,7 +204,6 @@ lvgl:
       align: CENTER
       y: 3
       text_font: roboto_med
-  gradients: !include colors/SEASONS
   pages:
 
     ### GUI - THERMOSTAT/WEATHER HOME PAGE
@@ -414,7 +418,6 @@ lvgl:
             x: 140
             y: -32
             text_align: LEFT
-            text_font: roboto_med
             text: "00°C\n00°C"
         - label:
             id: weather_text_label
