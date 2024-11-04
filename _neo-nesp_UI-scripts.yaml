@@ -1,0 +1,741 @@
+script:
+  # HVAC UI LOGIC
+  - id: set_mode_off
+    then:
+      - script.execute: hide_widgets
+      - lvgl.label.update:
+          id: mode_label
+          text: "OFF"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: black
+      - light.turn_off: rgb_ring
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: white
+          text: "\U000F0717"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_heat
+    then:
+      - script.execute: show_widgets
+      - lvgl.label.update:
+          id: mode_label
+          text: "HEAT TO"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: mode_heat
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.533
+          blue:  0.118
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_heat
+          text: "\U000F0238"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: mode_heat
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_cool
+    then:
+      - script.execute: show_widgets
+      - lvgl.label.update:
+          id: mode_label
+          text: "COOL TO"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: mode_cool
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   0.498
+          green: 0.675
+          blue:  1.000
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_cool
+          text: "\U000F0717"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: mode_cool
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_fan
+    then:
+      - script.execute: show_widgets
+      - lvgl.widget.hide:
+          - current_temp_arc
+          - set_temp_roller
+          - celsius_label
+          - current_temp_label
+          - fan_icon_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: TRANSP
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: TRANSP
+      - lvgl.widget.show:
+          - big_fan_mode_icon
+      - lvgl.label.update:
+          id: mode_label
+          text: "FAN ONLY"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: mode_fan
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   0.749
+          green: 0.980
+          blue:  1.000
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_fan
+          text: "\U000F0210"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: mode_fan
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_dry
+    then:
+      - script.execute: show_widgets
+      - lvgl.label.update:
+          id: mode_label
+          text: "DEHUMIDIFY"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: mode_dry
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.753
+          blue:  0.549
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_dry
+          text: "\U000F058E"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: mode_dry
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_heat_cool
+    then:
+      - script.execute: show_widgets
+      - lvgl.label.update:
+          id: mode_label
+          text: "AUTO TO"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: graylight
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.894
+          blue:  0.804
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_heat_cool
+          text: "\U000F1A79"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: mode_heat_cool
+
+  # OFF UI LOGIC
+  - id: show_widgets
+    then:
+      - lvgl.widget.show:
+        - arc_bg
+        - current_temp_arc
+        - set_temp_roller
+        - celsius_label
+        - fan_icon_label
+        - current_temp_label
+        - small_zone_1_icon
+        - small_zone_2_icon
+        - meter_ticks
+        - mode_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: COVER
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: COVER
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_opa: COVER
+      - lvgl.widget.hide:
+        - big_fan_mode_icon
+        - weather_icon_label
+        - weather_temp_label
+        - zone_2_temp_icon
+        - zone_1_temp_icon
+        - zone_temp_label
+        - weather_text_label
+        - weather_now_later_label
+        - weather_tmr_label
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_opa: TRANSP
+  - id: hide_widgets
+    then:
+      - lvgl.widget.hide:
+        - big_fan_mode_icon
+        - arc_bg
+        - current_temp_arc
+        - set_temp_roller
+        - celsius_label
+        - fan_icon_label
+        - current_temp_label
+        - small_zone_1_icon
+        - small_zone_2_icon
+        - meter_ticks
+        - mode_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: TRANSP
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: TRANSP
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_opa: TRANSP
+      - lvgl.widget.show:
+        - weather_icon_label
+        - weather_temp_label
+        - zone_2_temp_icon
+        - zone_1_temp_icon
+        - zone_temp_label
+        - weather_text_label
+        - weather_now_later_label
+        - weather_tmr_label
+      # XXX kato: disable seasonal backgrounds
+      #- lvgl.widget.update:
+      #    id: weather_bg
+      #    bg_opa: COVER
+
+  # OFF WEATHER UI LOGIC
+  - id: update_weather_icon_label
+    then:
+      - lvgl.label.update:
+          id: weather_icon_label
+          text: !lambda |-
+            static char buf[8];
+            std::string icon;
+            auto x = id(bom_icon).state;
+            if (x.compare("mdi:weather-night") == 0) {
+              icon = "\U000F0594";
+            } else if (x.compare("mdi:weather-cloudy") == 0) {
+              icon = "\U000F0590";
+            } else if (x.compare("mdi:weather-hurricane") == 0) {
+              icon = "\U000F0898";
+            } else if (x.compare("mdi:weather-hazy") == 0) {
+              icon = "\U000F0F30";
+            } else if (x.compare("mdi:weather-fog") == 0) {
+              icon = "\U000F0F91";
+            } else if (x.compare("mdi:snowflake-melt") == 0) {
+              icon = "\U000F12CB";
+            } else if (x.compare("mdi:weather-pouring") == 0) {
+              icon = "\U000F0596";
+            } else if (x.compare("mdi:weather-partly-rainy") == 0) {
+              icon = "\U000F0F33";
+            } else if (x.compare("mdi:weather-light-showers") == 0) {
+              icon = "\U000F0F33";    // mdi:partly-rainy, mdi:light-showers doesn't exist?
+            } else if (x.compare("mdi:weather-sunny") == 0) {
+              icon = "\U000F0599";
+            } else if (x.compare("mdi:weather-partly-cloudy") == 0) {
+              icon = "\U000F0595";
+            } else if (x.compare("mdi:weather-rainy") == 0) {
+              icon = "\U000F0597";
+            } else if (x.compare("mdi:weather-snowy") == 0) {
+              icon = "\U000F0598";
+            } else if (x.compare("mdi:weather-lightning") == 0) {
+              icon = "\U000F0593";    // not in BoM integration code last time I checked
+            } else if (x.compare("mdi:weather-lightning-rainy") == 0) {
+              icon = "\U000F0593";    // override with mdi:lightning
+            } else if (x.compare("mdi:weather-windy") == 0) {
+              icon = "\U000F059D";
+            } else if (x.compare("mdi:weather-hail") == 0) {
+              icon = "\U000F0592";    // not in BoM integration code last time I checked
+            } else {
+              icon = "";
+            }
+            snprintf(buf, sizeof(buf), "%s", icon.c_str());
+            return buf;
+  - id: update_weather_now_later_label
+    then:
+      - lvgl.label.update:
+          id: weather_now_later_label
+          text: !lambda |-
+            static char buf[32];
+            auto now = round(id(bom_now_temp).state);
+            auto later = round(id(bom_later_temp).state);
+            auto now_label = id(bom_now_label).state;
+            auto later_label = id(bom_later_label).state;
+            if (now_label.compare("Min") == 0 && later_label.compare("Max") == 0) {
+              snprintf(buf, sizeof(buf), "\U000F050F %.0f–%.0f°C", now, later);
+            } else if (now_label.compare("Max") == 0) {
+              snprintf(buf, sizeof(buf), "\U000F0E03 %.0f°C", now);
+            } else if (now_label.compare("Overnight min") == 0) {
+              snprintf(buf, sizeof(buf), "\U000F0594 %.0f°C night", now);
+            }
+            return buf;
+  - id: update_weather_tmr_label
+    then:
+      - lvgl.label.update:
+          id: weather_tmr_label
+          text: !lambda |-
+            static char buf[32];
+            std::string icon;
+            auto low = round(id(bom_tmr_temp_low).state);
+            auto high = round(id(bom_tmr_temp_high).state);
+            auto x = id(bom_tmr_icon).state;
+              if (x.compare("mdi:weather-night") == 0) {
+                icon = "\U000F0594";
+              } else if (x.compare("mdi:weather-cloudy") == 0) {
+                icon = "\U000F0590";
+              } else if (x.compare("mdi:weather-hurricane") == 0) {
+                icon = "\U000F0898";
+              } else if (x.compare("mdi:weather-hazy") == 0) {
+                icon = "\U000F0F30";
+              } else if (x.compare("mdi:weather-fog") == 0) {
+                icon = "\U000F0F91";
+              } else if (x.compare("mdi:snowflake-melt") == 0) {
+                icon = "\U000F12CB";
+              } else if (x.compare("mdi:weather-pouring") == 0) {
+                icon = "\U000F0596";
+              } else if (x.compare("mdi:weather-partly-rainy") == 0) {
+                icon = "\U000F0F33";
+              } else if (x.compare("mdi:weather-light-showers") == 0) {
+                icon = "\U000F0F33";    // mdi:partly-rainy, mdi:light-showers doesn't exist?
+              } else if (x.compare("mdi:weather-sunny") == 0) {
+                icon = "\U000F0599";
+              } else if (x.compare("mdi:weather-partly-cloudy") == 0) {
+                icon = "\U000F0595";
+              } else if (x.compare("mdi:weather-rainy") == 0) {
+                icon = "\U000F0597";
+              } else if (x.compare("mdi:weather-snowy") == 0) {
+                icon = "\U000F0598";
+              } else if (x.compare("mdi:weather-lightning") == 0) {
+                icon = "\U000F0593";    // not in BoM integration code last time I checked
+              } else if (x.compare("mdi:weather-lightning-rainy") == 0) {
+                icon = "\U000F0593";    // override with mdi:lightning
+              } else if (x.compare("mdi:weather-windy") == 0) {
+                icon = "\U000F059D";
+              } else if (x.compare("mdi:weather-hail") == 0) {
+                icon = "\U000F0592";    // not in BoM integration code last time I checked
+              } else {
+                icon = "";
+              }
+            snprintf(buf, sizeof(buf), "%s %.0f–%.0f°C tmr.", icon.c_str(), low, high);
+            return buf;
+  - id: update_zone_temp_label
+    then:
+      - lvgl.label.update:
+          id: zone_temp_label
+          text: 
+            format: "%.0f°C\n%.0f°C"
+            args: [ 'round(id(zone_2_temp).state)', 'round(id(zone_1_temp).state)' ]
+
+  # MENU UI LOGIC
+  - id: update_menu_date_label
+    then:
+      - lvgl.label.update:
+          id: menu_date_label
+          text: !lambda |-
+            auto now = id(hass_time).now();
+            static const char * const day_names[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            static char buf[10];
+            snprintf(buf, sizeof(buf), "%s %d/%02d", day_names[now.day_of_week-1], now.day_of_month, now.month);
+            return buf;
+
+  # PRESET UI LOGIC
+  - id: set_preset_none
+    then:
+      - lvgl.label.update:
+          id: menu_preset_button_label
+          text_color: white
+          text: "\U000F032A"
+      - lvgl.widget.update:
+          id: preset_eco_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_comfort_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_boost_button
+          text_color: white
+  - id: set_preset_eco
+    then:
+      - lvgl.label.update:
+          id: menu_preset_button_label
+          text_color: green
+          text: "\U000F032A"
+      - lvgl.widget.update:
+          id: preset_eco_button
+          text_color: green
+      - lvgl.widget.update:
+          id: preset_comfort_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_boost_button
+          text_color: white
+  - id: set_preset_comfort
+    then:
+      - lvgl.label.update:
+          id: menu_preset_button_label
+          text_color: amber
+          text: "\U000F04B9"
+      - lvgl.widget.update:
+          id: preset_eco_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_comfort_button
+          text_color: amber
+      - lvgl.widget.update:
+          id: preset_boost_button
+          text_color: white
+  - id: set_preset_boost
+    then:
+      - lvgl.label.update:
+          id: menu_preset_button_label
+          text_color: red
+          text: "\U000F14DE"
+      - lvgl.widget.update:
+          id: preset_eco_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_comfort_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_boost_button
+          text_color: red
+
+  # FAN UI LOGIC
+  - id: set_fan_auto
+    then:
+      - lvgl.label.update:
+          id: big_fan_mode_icon
+          text: "\U000F171D"
+      - lvgl.label.update:
+          id: fan_icon_label
+          text: "\U000F171D"
+      - lvgl.label.update:
+          id: menu_fan_button_label
+          text: "\U000F171D"
+  - id: set_fan_low
+    then:
+      - lvgl.label.update:
+          id: big_fan_mode_icon
+          text: "\U000F1472"
+      - lvgl.label.update:
+          id: fan_icon_label
+          text: "\U000F1472"
+      - lvgl.label.update:
+          id: menu_fan_button_label
+          text: "\U000F1472"
+  - id: set_fan_medium
+    then:
+      - lvgl.label.update:
+          id: big_fan_mode_icon
+          text: "\U000F1473"
+      - lvgl.label.update:
+          id: fan_icon_label
+          text: "\U000F1473"
+      - lvgl.label.update:
+          id: menu_fan_button_label
+          text: "\U000F1473"
+  - id: set_fan_high
+    then:
+      - lvgl.label.update:
+          id: big_fan_mode_icon
+          text: "\U000F1474"
+      - lvgl.label.update:
+          id: fan_icon_label
+          text: "\U000F1474"
+      - lvgl.label.update:
+          id: menu_fan_button_label
+          text: "\U000F1474"
+
+  # ZONING UI LOGIC
+  - id: set_zone_1
+    then:
+      - lvgl.label.update:
+          id: zone_1_temp_icon
+          text_color: white
+      - lvgl.label.update:
+          id: small_zone_1_icon
+          text_color: white
+      - lvgl.widget.update:
+          id: menu_zone_1_button
+          text_color: white
+  - id: unset_zone_1
+    then:
+      - lvgl.label.update:
+          id: zone_1_temp_icon
+          text_color: graydark
+      - lvgl.label.update:
+          id: small_zone_1_icon
+          text_color: graydark
+      - lvgl.widget.update:
+          id: menu_zone_1_button
+          text_color: graydark
+  - id: set_zone_2
+    then:
+      - lvgl.label.update:
+          id: zone_2_temp_icon
+          text_color: white
+      - lvgl.label.update:
+          id: small_zone_2_icon
+          text_color: white
+      - lvgl.widget.update:
+          id: menu_zone_2_button
+          text_color: white
+      - lvgl.label.update:
+          id: zone_2_temp_icon
+          text_color: white
+  - id: unset_zone_2
+    then:
+      - lvgl.label.update:
+          id: zone_2_temp_icon
+          text_color: graydark
+      - lvgl.label.update:
+          id: small_zone_2_icon
+          text_color: graydark
+      - lvgl.widget.update:
+          id: menu_zone_2_button
+          text_color: graydark
+
+  # ALARM UI LOGIC
+  - id: update_alarm_disarmed
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "DISARMED"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: graylight
+      - light.turn_off: rgb_ring
+      - script.execute: goto_main_page
+  - id: update_alarm_arming
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMING"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Arming"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: deep_orange
+      - script.execute: goto_alarm_page
+  - id: update_alarm_armed
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMED"
+      - light.turn_off: rgb_ring
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.000
+          blue:  0.000
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+  - id: update_alarm_pending
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMED"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Pending"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+  - id: update_alarm_disarming
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "DISARMING"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Pending"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+  - id: update_alarm_triggered
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ALARM!"
+      - lvgl.widget.update:
+          id: alarm_bg
+          bg_color: red
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Police"
+      - script.execute: goto_alarm_page
+
+  # SEASONAL BACKGROUND
+  # XXX kato disabled: to enable, set weather_bg opacity
+  # XXX may need to change weather label colouring
+  - id: set_season_bg
+    then:
+      - lambda: |-
+          auto now = id(hass_time).now();
+          if (now.month >= 3 && now.month <= 5) {
+            id(set_season_bg_autumn).execute();
+          } else if (now.month >= 6 && now.month <= 8) {
+            id(set_season_bg_winter).execute();
+          } else if (now.month >= 9 && now.month <= 11) {
+            id(set_season_bg_spring).execute();
+          } else if (now.month == 12 || now.month <= 2) {
+            id(set_season_bg_summer).execute();
+          }
+  - id: set_season_bg_autumn
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: autumn
+  - id: set_season_bg_winter
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: winter
+  - id: set_season_bg_spring
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: spring
+  - id: set_season_bg_summer
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: summer
+
+  # MISC - PAGE NAVIGATION
+  - id: goto_main_page
+    then:
+      - lvgl.page.show:
+          id: main_page
+          animation: FADE_OUT
+          time: 500ms
+  - id: goto_menu_page
+    then:
+      - lvgl.page.show:
+          id: menu_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_mode_page
+    then:
+      - lvgl.page.show:
+          id: mode_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_preset_page
+    then:
+      - lvgl.page.show:
+          id: preset_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_fan_page
+    then:
+      - lvgl.page.show:
+          id: fan_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_alarm_page
+    then:
+      - lvgl.page.show:
+          id: alarm_page
+          animation: FADE_IN
+          time: 500ms
+
+  # MISC - VIBRATION MOTOR SCRIPT
+  - id: vibrate
+    parameters:
+      length_ms: int
+    then:
+      # XXX doesn't seem to delay properly for short lengths (10-100ms)
+      - switch.turn_on: vibration
+      - delay: !lambda return length_ms;
+      - switch.turn_off: vibration
