@@ -357,7 +357,7 @@ script:
             } else if (now_label.compare("Max") == 0) {
               snprintf(buf, sizeof(buf), "\U000F0E03 max %.0f°C", now);
             } else if (now_label.compare("Overnight min") == 0) {
-              snprintf(buf, sizeof(buf), "\U000F0594 night %.0f°C", now);
+              snprintf(buf, sizeof(buf), "\U000F0594 %.0f°C night", now);
             }
             return buf;
   - id: update_weather_aux_label
@@ -448,7 +448,7 @@ script:
       - lvgl.label.update:
           id: weather_aux_label
           text:
-            format: "\U000F1185 pollen %s"
+            format: "\U000F1885 pollen %s"
             args: [ 'id(bom_pollen).state.c_str()' ]
   - id: update_weather_aux_label_uv
     then:

@@ -36,7 +36,7 @@ font:
           "\U000F004D", # mdi:arrow-left
           "\U000F0E03", # mdi:thermometer-chevron-up
           "\U000F0E02", # mdi:thermometer-chevron-down
-          "\U000F1185", # mdi:flower-pollen
+          "\U000F1885", # mdi:flower-pollen
           "\U000F0594", # mdi:weather-night (clear)
           "\U000F0590", # mdi:weather-cloudy (cloudy)
           "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
@@ -480,7 +480,7 @@ lvgl:
             x: 30
             y: 55
             text_align: LEFT
-            text: "\U000F1185 pollen n/a"
+            text: "\U000F1885 pollen n/a"
         - label:
             id: selected_menu_label
             align: CENTER
