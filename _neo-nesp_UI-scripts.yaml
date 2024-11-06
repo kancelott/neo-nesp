@@ -364,7 +364,7 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return (id(hass_time).now().hour >= 17);'
+            lambda: 'return id(hass_time).now().hour >= 17;'
           then:
             # display tomorrow's temp after 17:00
             - script.execute: update_weather_aux_label_tmr_temp
@@ -372,22 +372,22 @@ script:
             - if:
                 condition:
                   or:
-                    - lambda: 'return (id(bom_pollen).state.compare("extreme") == 0;'
-                    - lambda: 'return (id(bom_pollen).state.compare("high") == 0;'
+                    - lambda: 'return id(bom_pollen).state.compare("extreme") == 0;'
+                    - lambda: 'return id(bom_pollen).state.compare("high") == 0;'
                 then:
                   # display pollen if high to extreme
                   - script.execute: update_weather_aux_label_pollen
                 else:
                   - if:
                       condition:
-                        lambda: 'return (id(bom_uv).state.compare("extreme") == 0;'
+                        lambda: 'return id(bom_uv).state.compare("extreme") == 0;'
                       then:
                         # display UV if extreme
                         - script.execute: update_weather_aux_label_uv
                       else:
                         - if:
                             condition:
-                              lambda: 'return (id(bom_rain_chance).state >= 90;'
+                              lambda: 'return id(bom_rain_chance).state >= 90;'
                             then:
                               # display rain if chance > 90%
                               - script.execute: update_weather_aux_label_rain
@@ -449,21 +449,21 @@ script:
           id: weather_aux_label
           text:
             format: "\U000F1185 pollen %s"
-            args: [ 'id(bom_pollen).c_str()' ]
+            args: [ 'id(bom_pollen).state.c_str()' ]
   - id: update_weather_aux_label_uv
     then:
       - lvgl.label.update:
           id: weather_aux_label
           text:
             format: "\U000F1A45 UV %s"
-            args: [ 'id(bom_uv).c_str()' ]
+            args: [ 'id(bom_uv).state.c_str()' ]
   - id: update_weather_aux_label_rain
     then:
       - lvgl.label.update:
           id: weather_aux_label
           text:
             format: "\U000F0596 %smm"
-            args: [ 'id(bom_rain).c_str()' ]
+            args: [ 'id(bom_rain).state.c_str()' ]
 
   # MENU UI LOGIC
   - id: update_menu_date_label
