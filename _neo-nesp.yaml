@@ -148,14 +148,22 @@ switch:
           then:
             - lvgl.resume:
             - lvgl.widget.redraw:
-            - delay: 1s
-            - lvgl.pause:
       - light.turn_on: backlight
 
 time:
   - platform: homeassistant
     id: hass_time
+    on_time_sync:
+      then:
+        - script.execute: set_season_bg
     on_time:
+      - hours: 0
+        minutes: 0
+        seconds: 0
+        days_of_month: 1
+        months: 3,6,9,12
+        then:
+          - script.execute: set_season_bg
       - hours: 2,3,4,5
         minutes: 0
         seconds: 0
@@ -166,21 +174,16 @@ time:
         seconds: 0
         then:
           - switch.turn_off: switch_antiburn
+      - hours: 17
+        minutes: 0
+        seconds: 0
+        then:
+          - script.execute: update_weather_aux_label
       - hours: 0
         minutes: 0
         seconds: 0
         then:
           - script.execute: update_menu_date_label
-      - hours: 0
-        minutes: 0
-        seconds: 0
-        days_of_month: 1
-        months: 3,6,9,12
-        then:
-          - script.execute: set_season_bg
-    on_time_sync:
-      then:
-        - script.execute: set_season_bg
 
 binary_sensor:
   ### CENTRE PUSH BUTTON
@@ -370,9 +373,9 @@ sensor:
     internal: true
     on_value:
       - lvgl.label.update:
-          id: menu_weather_feels_like_label
+          id: weather_feels_like_label
           text:
-            format: "feels %.0f°C"
+            format: "Feels like %.0f°C"
             args: [ 'round(x)' ]
 
   ### HASS BoM - forecast tomorrow low
@@ -381,7 +384,7 @@ sensor:
     id: bom_tmr_temp_low
     internal: true
     on_value:
-      - script.execute: update_weather_tmr_label
+      - script.execute: update_weather_aux_label
 
   ### HASS BoM - forecast tomorrow high
   - platform: homeassistant
@@ -389,7 +392,15 @@ sensor:
     id: bom_tmr_temp_high
     internal: true
     on_value:
-      - script.execute: update_weather_tmr_label
+      - script.execute: update_weather_aux_label
+
+  ### HASS BoM - rain chance
+  - platform: homeassistant
+    entity_id: ${weather_rain_chance}
+    id: bom_rain_chance
+    internal: true
+    on_value:
+      - script.execute: update_weather_aux_label
 
 text_sensor:
   ### HASS - HVAC MODE
@@ -473,20 +484,6 @@ text_sensor:
             id(unset_zone_2).execute();
           }
 
-  ### HASS BoM - weather text
-  - platform: homeassistant
-    entity_id: ${weather_text}
-    id: bom_text
-    internal: true
-    filters:
-      #- to_upper:
-      - substitute:
-        - ". -> "
-    on_value:
-      - lvgl.label.update:
-          id: weather_text_label
-          text: !lambda 'return x.c_str();'
-
   ### HASS BoM - weather icon
   - platform: homeassistant
     entity_id: ${weather_entity}
@@ -495,6 +492,16 @@ text_sensor:
     internal: true
     on_value:
       - script.execute: update_weather_icon_label
+
+  ### HASS BoM - weather text
+  - platform: homeassistant
+    entity_id: ${weather_text}
+    id: bom_text
+    internal: true
+    filters:
+      - to_lower:
+      - substitute:
+        - ". -> "
 
   ### HASS BoM - now temp label
   - platform: homeassistant
@@ -518,36 +525,46 @@ text_sensor:
     id: bom_rain
     internal: true
     on_value:
+      - script.execute: update_weather_aux_label
       - lvgl.label.update:
           id: menu_weather_rain_label
           text:
             format: "\U000F0596 %smm"
             args: [ 'x.c_str()' ]
 
-  ### HASS BoM - UV category
+  ### HASS BoM - UV forecast
   - platform: homeassistant
-    entity_id: ${weather_uv_category}
-    id: bom_uv_category
+    entity_id: ${weather_uv}
+    id: bom_uv
     internal: true
     filters:
       - to_lower:
+      - substitute:
+        - "unknown -> n/a"
     on_value:
+      - script.execute: update_weather_aux_label
       - lvgl.label.update:
           id: menu_weather_uv_label
           text:
             format: "\U000F1A45 UV %s"
             args: [ 'x.c_str()' ]
 
-  ### HASS BoM - weather tomorrow text
+  ### HASS BoM - pollen
   - platform: homeassistant
-    entity_id: ${weather_tomorrow_text}
-    id: bom_tmr_text
+    entity_id: ${weather_pollen}
+    id: bom_pollen
     internal: true
     filters:
+      - to_lower:
       - substitute:
-        - ". -> ''"
+        - "unknown -> n/a"
     on_value:
-      - script.execute: update_weather_tmr_label
+      - script.execute: update_weather_aux_label
+      - lvgl.label.update:
+          id: menu_weather_pollen_label
+          text:
+            format: "\U000F1185 pollen %s"
+            args: [ 'x.c_str()' ]
 
   ### HASS BoM - weather tomorrow icon
   - platform: homeassistant
@@ -555,7 +572,17 @@ text_sensor:
     id: bom_tmr_icon
     internal: true
     on_value:
-      - script.execute: update_weather_tmr_label
+      - script.execute: update_weather_aux_label
+
+  ### HASS BoM - weather tomorrow text
+  - platform: homeassistant
+    entity_id: ${weather_tomorrow_text}
+    id: bom_tmr_text
+    internal: true
+    filters:
+      - to_lower:
+      - substitute:
+        - ". -> "
 
     ### HASS - Alarm
   - platform: homeassistant
@@ -606,15 +633,15 @@ text_sensor:
 
 number:
   - platform: template
-    name: Display timeout
-    optimistic: true
+    name: Display Timeout
     id: display_timeout
+    optimistic: true
     unit_of_measurement: "s"
-    initial_value: 1800
+    initial_value: 300
     restore_value: true
     min_value: 30
     max_value: 3600
-    step: 5
+    step: 30
     mode: box
 
 spi:
@@ -632,7 +659,7 @@ display:
     data_rate: 10MHz
     color_order: RGB
     auto_clear_enabled: false
-    update_interval: 1h
+    update_interval: never
     dimensions:
       width: 480
       height: 480

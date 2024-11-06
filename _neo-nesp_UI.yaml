@@ -30,13 +30,13 @@ font:
           "\U000F14DE", # mdi:rocket-launch
           "\U000F0D80", # mdi:home-floor-1
           "\U000F0D81", # mdi:home-floor-2
-          "\U000F004D", # mdi:arrow-left
           "\U000F081C", # mdi:door-open
           "\U000F099D", # mdi:shield-lock
           "\U000F099E", # mdi:shield-off
+          "\U000F004D", # mdi:arrow-left
           "\U000F0E03", # mdi:thermometer-chevron-up
           "\U000F0E02", # mdi:thermometer-chevron-down
-          "\U000F00F6", # mdi:calendar-today
+          "\U000F1185", # mdi:flower-pollen
           "\U000F0594", # mdi:weather-night (clear)
           "\U000F0590", # mdi:weather-cloudy (cloudy)
           "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
@@ -87,29 +87,9 @@ font:
           "\U000F14DE", # mdi:rocket-launch
           "\U000F0D80", # mdi:home-floor-1
           "\U000F0D81", # mdi:home-floor-2
-          "\U000F004D", # mdi:arrow-left
-          "\U000F081C", # mdi:door-open
-          "\U000F0E03", # mdi:thermometer-chevron-up
-          "\U000F0E02", # mdi:thermometer-chevron-down
           "\U000F099D", # mdi:shield-lock
           "\U000F099E", # mdi:shield-off
-          "\U000F0594", # mdi:weather-night (clear)
-          "\U000F0590", # mdi:weather-cloudy (cloudy)
-          "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
-          "\U000F0F30", # mdi:weather-hazy (dust, dusty, haze, hazy)
-          "\U000F0591", # mdi:weather-fog (fog)
-          "\U000F12CB", # mdi:snowflake-melt (frost)
-          "\U000F0596", # mdi:weather-pouring (heavy_shower, heavy_showers, rain)
-          "\U000F0F33", # mdi:weather-partly-rainy (light_rain)
-                        # mdi:weather-light-showers (light_shower, light_showers)
-          "\U000F0599", # mdi:weather-sunny (mostly_sunny, sunny)
-          "\U000F0595", # mdi:weather-partly-cloudy (partly_cloudy)
-          "\U000F0597", # mdi:weather-rainy (shower, showers)
-          "\U000F0598", # mdi:weather-snowy (snow)
-          "\U000F0593", # mdi:weather-lightning
-          "\U000F067E", # mdi:weather-lightning-rainy (storm, storms)
-          "\U000F059D", # mdi:weather-windy (wind, windy)
-          "\U000F0592", # mdi:weather-hail
+          "\U000F004D", # mdi:arrow-left
           ]
 
   - file: 'gfonts://Roboto@400'
@@ -184,7 +164,7 @@ lvgl:
     enter_button: push_button
     sensor: rotary
   on_idle:
-    timeout: !lambda "return (id(display_timeout).state * 1000);"
+    timeout: !lambda 'return (id(display_timeout).state * 1000);'
     then:
       - script.execute: goto_main_page
   scrollbar_mode: "OFF"
@@ -415,28 +395,27 @@ lvgl:
             id: zone_temp_label
             hidden: True
             align: CENTER
-            x: 140
+            x: 135
             y: -32
             text_align: LEFT
             text: "00°C\n00°C"
         - label:
-            id: weather_text_label
+            id: weather_feels_like_label
             hidden: True
             align: CENTER
-            y: 60
-            text_font: roboto_med
-            text: "Weather"
+            y: 50
+            text: "Feels like 00°C"
         - label:
             id: weather_now_later_label
             hidden: True
             align: CENTER
-            y: 120
+            y: 110
             text: "\U000F050F 00–00°C"
         - label:
-            id: weather_tmr_label
+            id: weather_aux_label
             hidden: True
             align: CENTER
-            y: 155
+            y: 145
             text: "\U000F0599 00–00°C tmr."
         - label:
             id: perimeter_label
@@ -483,32 +462,25 @@ lvgl:
             text_color: gray
             text: "SUN 1/01"
         - label:
-            id: menu_weather_icon_label
+            id: menu_weather_rain_label
             align: LEFT_MID
             x: 30
             y: -25
-            text_align: LEFT
-            text: "\U000F0599"
-        - label:
-            id: menu_weather_feels_like_label
-            align: LEFT_MID
-            x: 60
-            y: -25
-            text: "feels 00°C"
+            text: "\U000F0596 0mm"
         - label:
             id: menu_weather_uv_label
             align: LEFT_MID
             x: 30
             y: 15
             text_align: LEFT
-            text: "\U000F1A45 UV none"
+            text: "\U000F1A45 UV n/a"
         - label:
-            id: menu_weather_rain_label
+            id: menu_weather_pollen_label
             align: LEFT_MID
             x: 30
             y: 55
             text_align: LEFT
-            text: "\U000F0596 0mm"
+            text: "\U000F1185 pollen n/a"
         - label:
             id: selected_menu_label
             align: CENTER

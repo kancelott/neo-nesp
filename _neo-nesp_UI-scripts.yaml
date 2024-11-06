@@ -244,9 +244,9 @@ script:
         - zone_2_temp_icon
         - zone_1_temp_icon
         - zone_temp_label
-        - weather_text_label
+        - weather_feels_like_label
         - weather_now_later_label
-        - weather_tmr_label
+        - weather_aux_label
       - lvgl.widget.update:
           id: weather_bg
           bg_opa: TRANSP
@@ -279,15 +279,22 @@ script:
         - zone_2_temp_icon
         - zone_1_temp_icon
         - zone_temp_label
-        - weather_text_label
+        - weather_feels_like_label
         - weather_now_later_label
-        - weather_tmr_label
+        - weather_aux_label
       # XXX kato: disable seasonal backgrounds
       #- lvgl.widget.update:
       #    id: weather_bg
       #    bg_opa: COVER
 
   # OFF WEATHER UI LOGIC
+  - id: update_zone_temp_label
+    then:
+      - lvgl.label.update:
+          id: zone_temp_label
+          text: 
+            format: "%.0f°C\n%.0f°C"
+            args: [ 'round(id(zone_2_temp).state)', 'round(id(zone_1_temp).state)' ]
   - id: update_weather_icon_label
     then:
       - lvgl.label.update:
@@ -348,15 +355,49 @@ script:
             if (now_label.compare("Min") == 0 && later_label.compare("Max") == 0) {
               snprintf(buf, sizeof(buf), "\U000F050F %.0f–%.0f°C", now, later);
             } else if (now_label.compare("Max") == 0) {
-              snprintf(buf, sizeof(buf), "\U000F0E03 %.0f°C", now);
+              snprintf(buf, sizeof(buf), "\U000F0E03 max %.0f°C", now);
             } else if (now_label.compare("Overnight min") == 0) {
-              snprintf(buf, sizeof(buf), "\U000F0594 %.0f°C night", now);
+              snprintf(buf, sizeof(buf), "\U000F0594 night %.0f°C", now);
             }
             return buf;
-  - id: update_weather_tmr_label
+  - id: update_weather_aux_label
+    then:
+      - if:
+          condition:
+            lambda: 'return (id(hass_time).now().hour >= 17);'
+          then:
+            # display tomorrow's temp after 17:00
+            - script.execute: update_weather_aux_label_tmr_temp
+          else:
+            - if:
+                condition:
+                  or:
+                    - lambda: 'return (id(bom_pollen).state.compare("extreme") == 0;'
+                    - lambda: 'return (id(bom_pollen).state.compare("high") == 0;'
+                then:
+                  # display pollen if high to extreme
+                  - script.execute: update_weather_aux_label_pollen
+                else:
+                  - if:
+                      condition:
+                        lambda: 'return (id(bom_uv).state.compare("extreme") == 0;'
+                      then:
+                        # display UV if extreme
+                        - script.execute: update_weather_aux_label_uv
+                      else:
+                        - if:
+                            condition:
+                              lambda: 'return (id(bom_rain_chance).state >= 90;'
+                            then:
+                              # display rain if chance > 90%
+                              - script.execute: update_weather_aux_label_rain
+                            else:
+                              # display UV by default during day
+                              - script.execute: update_weather_aux_label_uv
+  - id: update_weather_aux_label_tmr_temp
     then:
       - lvgl.label.update:
-          id: weather_tmr_label
+          id: weather_aux_label
           text: !lambda |-
             static char buf[32];
             std::string icon;
@@ -402,13 +443,27 @@ script:
               }
             snprintf(buf, sizeof(buf), "%s %.0f–%.0f°C tmr.", icon.c_str(), low, high);
             return buf;
-  - id: update_zone_temp_label
+  - id: update_weather_aux_label_pollen
     then:
       - lvgl.label.update:
-          id: zone_temp_label
-          text: 
-            format: "%.0f°C\n%.0f°C"
-            args: [ 'round(id(zone_2_temp).state)', 'round(id(zone_1_temp).state)' ]
+          id: weather_aux_label
+          text:
+            format: "\U000F1185 pollen %s"
+            args: [ 'id(bom_pollen).c_str()' ]
+  - id: update_weather_aux_label_uv
+    then:
+      - lvgl.label.update:
+          id: weather_aux_label
+          text:
+            format: "\U000F1A45 UV %s"
+            args: [ 'id(bom_uv).c_str()' ]
+  - id: update_weather_aux_label_rain
+    then:
+      - lvgl.label.update:
+          id: weather_aux_label
+          text:
+            format: "\U000F0596 %smm"
+            args: [ 'id(bom_rain).c_str()' ]
 
   # MENU UI LOGIC
   - id: update_menu_date_label
