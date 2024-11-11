@@ -563,7 +563,7 @@ text_sensor:
       - lvgl.label.update:
           id: menu_weather_pollen_label
           text:
-            format: "\U000F1185 pollen %s"
+            format: "\U000F1885 pollen %s"
             args: [ 'x.c_str()' ]
 
   ### HASS BoM - weather tomorrow icon

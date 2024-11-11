@@ -355,7 +355,7 @@ script:
             if (now_label.compare("Min") == 0 && later_label.compare("Max") == 0) {
               snprintf(buf, sizeof(buf), "\U000F050F %.0f–%.0f°C", now, later);
             } else if (now_label.compare("Max") == 0) {
-              snprintf(buf, sizeof(buf), "\U000F0E03 max %.0f°C", now);
+              snprintf(buf, sizeof(buf), "\U000F0E03 %.0f°C max.", now);
             } else if (now_label.compare("Overnight min") == 0) {
               snprintf(buf, sizeof(buf), "\U000F0594 %.0f°C night", now);
             }
