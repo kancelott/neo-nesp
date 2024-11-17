@@ -247,6 +247,7 @@ script:
         - weather_feels_like_label
         - weather_now_later_label
         - weather_aux_label
+        - perimeter_label
       - lvgl.widget.update:
           id: weather_bg
           bg_opa: TRANSP
@@ -282,6 +283,7 @@ script:
         - weather_feels_like_label
         - weather_now_later_label
         - weather_aux_label
+        - perimeter_label
       # XXX kato: disable seasonal backgrounds
       #- lvgl.widget.update:
       #    id: weather_bg
@@ -387,9 +389,9 @@ script:
                       else:
                         - if:
                             condition:
-                              lambda: 'return id(bom_rain_chance).state >= 90;'
+                              lambda: 'return id(bom_rain_chance).state >= 80;'
                             then:
-                              # display rain if chance > 90%
+                              # display rain if chance > 80%
                               - script.execute: update_weather_aux_label_rain
                             else:
                               # display UV by default during day
