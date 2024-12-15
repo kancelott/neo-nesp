@@ -1,35 +1,54 @@
+packages:
+  common: !include _common.yaml
+  ui: !include _neo-nesp_UI.yaml
+
+  # Comment out lines below for unused optional features
+  feature_zones: !include _neo-nesp_feature-zones.yaml
+  feature_weather: !include _neo-nesp_feature-weather.yaml
+  feature_alarm: !include _neo-nesp_feature-alarm.yaml
+  feature_train: !include _neo-nesp_feature-train.yaml
+
 substitutions:
+  # Required: HA climate entity you want to control
+  climate_entity: climate.climate_control
+
+  # Optional feature: HA cover & temp entities for zoning support (2 supported)
+  zone_1_entity: cover.zone_1_downstairs
+  zone_2_entity: cover.zone_2_upstairs
+  zone_1_temp_entity: sensor.xiaomi_temp_1_temperature
+  zone_2_temp_entity: sensor.xiaomi_temp_2_temperature
+  zone_1_humidity_entity: sensor.xiaomi_temp_1_humidity
+  zone_2_humidity_entity: sensor.xiaomi_temp_2_humidity
+  solar_generation_entity: sensor.power_solar_generation
+  solar_consumption_entity: sensor.power_consumption
+
+  # Optional feature: HA weather entities
+  weather_entity: weather.bom_melbourne
+  weather_text: sensor.bom_melbourne_short_text_0
+  weather_now_temp: sensor.bom_melbourne_now_temp_now
+  weather_now_label: sensor.bom_melbourne_now_now_label
+  weather_later_label: sensor.bom_melbourne_now_later_label
+  weather_later_temp: sensor.bom_melbourne_now_temp_later
+  weather_feels_like: sensor.bom_melbourne_temp_feels_like
+  weather_rain: sensor.bom_melbourne_rain_amount_range_0
+  weather_rain_chance: sensor.bom_melbourne_rain_chance_0
+  weather_uv: sensor.bom_melbourne_uv_category_0
+  weather_pollen: sensor.oz_poll_allergy_forecast
+  weather_tomorrow_icon: sensor.bom_melbourne_mdi_icon_1
+  weather_tomorrow_text: sensor.bom_melbourne_short_text_1
+  weather_tomorrow_temp_low: sensor.bom_melbourne_temp_min_1
+  weather_tomorrow_temp_high: sensor.bom_melbourne_temp_max_1
+
+  # Optional feature: HA alarm entities
+  alarm_entity: alarm_control_panel.alarmo
+  alarm_perimeter_entity: sensor.perimeter_trigger
+
+  # esphome naming
   friendly_name: 'NESP'
   hostname: 'neo-nesp'
   device_name: 'neo_nesp'
   device_description: 'WT32S3-21S ZX2D10GE01R-V4848 rotary switch screen'
   ip: 10.0.80.75
-
-  # Home Assistant entities you want to control with nESP
-  climate_entity: climate.climate_control
-  zone_1_entity: cover.zone_1_downstairs
-  zone_2_entity: cover.zone_2_upstairs
-
-  # Home Assistant weather/info entities
-  weather_entity: weather.bom_melbourne
-  weather_feels_like_entity: sensor.bom_melbourne_temp_feels_like
-  weather_high_entity: sensor.bom_melbourne_temp_max_0
-  weather_high_tmr_entity: sensor.bom_melbourne_temp_max_1
-  weather_low_entity: sensor.bom_melbourne_temp_min_0
-  weather_rain_chance_entity: sensor.bom_melbourne_rain_chance_0
-  zone_1_temperature_entity: sensor.xiaomi_temp_1_temperature
-  zone_1_humidity_entity: sensor.xiaomi_temp_1_humidity
-  zone_2_temperature_entity: sensor.xiaomi_temp_2_temperature
-  zone_2_humidity_entity: sensor.xiaomi_temp_2_humidity
-  perimeter_entity: sensor.perimeter_trigger
-  alarm_entity: alarm_control_panel.alarmo
-
-external_components:
-  - source:
-      type: git
-      url: https://github.com/esphome/esphome
-      ref: dev
-    components: [ lvgl ]
 
 esphome:
   name: ${hostname}
@@ -43,7 +62,6 @@ esphome:
     - light.turn_on:
         id: backlight
         brightness: 0.7
-    - script.execute: set_weather_bg
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -66,7 +84,294 @@ psram:
 debug:
   update_interval: 60s
 
-<<: !include _common.yaml
+output:
+  ### DISPLAY BACKLIGHT
+  - platform: ledc
+    id: display_led
+    pin: 38
+    zero_means_zero: true
 
-<<: !include _neo-nesp.yaml
-<<: !include _neo-nesp_UI.yaml
+light:
+  - platform: monochromatic
+    id: backlight
+    output: display_led
+    name: Backlight
+    icon: mdi:brightness-percent
+    default_transition_length: 500ms
+    restore_mode: ALWAYS_ON
+
+  ### RGB RING LIGHT
+  - platform: esp32_rmt_led_strip
+    name: RGB LED
+    id: rgb_ring
+    pin: 4
+    num_leds: 13
+    rmt_channel: 0
+    rgb_order: GRB
+    chipset: WS2812
+    effects:
+      - strobe:
+          name: Pending
+          colors:
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 1000ms
+            - state: False
+              duration: 500ms
+      - strobe:
+          name: Arming
+          colors:
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.572
+              blue:  0.000
+              duration: 1000ms
+            - state: False
+              duration: 500ms
+      - strobe:
+          name: Police
+          colors:
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   1.000
+              green: 0.000
+              blue:  0.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   0.000
+              green: 0.000
+              blue:  1.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   0.000
+              green: 0.000
+              blue:  1.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   0.000
+              green: 0.000
+              blue:  1.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+            - state: True
+              brightness: 100%
+              red:   0.000
+              green: 0.000
+              blue:  1.000
+              duration: 100ms
+            - state: False
+              duration: 50ms
+
+binary_sensor:
+  ### CENTRE PUSH BUTTON
+  - platform: gpio
+    name: Button
+    id: push_button
+    icon: mdi:circle-outline
+    internal: true
+    pin:
+      number: 3
+      mode: INPUT
+      inverted: true
+      ignore_strapping_warning: true
+    #filters:
+    #  - delayed_on: 10ms   # debounce
+
+  - platform: status
+    name: Status
+
+sensor:
+  ### ROTARY ENCODER
+  - platform: rotary_encoder
+    name: Rotary Encoder
+    id: rotary
+    icon: mdi:cached
+    internal: true
+    resolution: 2
+    pin_a:
+      number: 6
+      inverted: true
+      mode: INPUT
+    pin_b:
+      number: 5
+      inverted: true
+      mode: INPUT
+
+  - platform: uptime
+    name: Uptime
+    disabled_by_default: True
+
+switch:
+  ### VIBRATION MOTOR
+  - platform: gpio
+    id: vibration
+    name: Vibration Motor
+    icon: mdi:vibrate
+    internal: true
+    pin: 7
+
+text_sensor:
+  - platform: debug
+    reset_reason:
+      name: Reset Reason
+      disabled_by_default: True
+
+button:
+- platform: restart
+  name: Restart
+  disabled_by_default: True
+
+number:
+  - platform: template
+    name: Display Timeout
+    id: display_timeout
+    optimistic: true
+    unit_of_measurement: "s"
+    initial_value: 300
+    restore_value: true
+    min_value: 30
+    max_value: 3600
+    step: 30
+    mode: box
+
+spi:
+  ### DISPLAY
+  clk_pin:
+    number: 47
+    allow_other_uses: true
+  mosi_pin:
+    number: 41
+    allow_other_uses: true
+
+display:
+  - platform: st7701s
+    id: screen
+    spi_mode: MODE0
+    data_rate: 10MHz
+    color_order: RGB
+    auto_clear_enabled: false
+    update_interval: never
+    dimensions:
+      width: 480
+      height: 480
+    cs_pin: 21
+    de_pin: 39
+    vsync_pin: 48
+    hsync_pin: 40
+    pclk_pin:
+      number: 45
+      ignore_strapping_warning: true
+    pclk_frequency: 15MHz
+    pclk_inverted: false
+    hsync_pulse_width: 10
+    hsync_back_porch:  10
+    hsync_front_porch: 10
+    vsync_pulse_width:  2
+    vsync_back_porch:  12
+    vsync_front_porch: 14
+    data_pins:
+      blue:
+        - number: 47                # LCD_D0  = b0
+          allow_other_uses: true
+        - number: 41                # LCD_D1  = b1
+          allow_other_uses: true
+        - 0                         # LCD_D2  = b2
+        - 42                        # LCD_D3  = b3
+        - 14                        # LCD_D4  = b4
+      green:
+        - 8                         # LCD_D5  = g0
+        - 13                        # LCD_D6  = g1
+        - 18                        # LCD_D7  = g2
+        - 12                        # LCD_D8  = g3
+        - 11                        # LCD_D9  = g4
+        - 17                        # LCD_D10 = g5
+      red:
+        - 10                        # LCD_D11 = r0
+        - 16                        # LCD_D12 = r1
+        - 9                         # LCD_D13 = r2
+        - 15                        # LCD_D14 = r3
+        - 46                        # LCD_D15 = r4
+    init_sequence:
+      # Reference: wireless-tag sample code: 
+      # https://github.com/wireless-tag-com/ZX2D10GE01R-V4848/blob/master/main/screen.c
+      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x13]    # CMD2_BKSEL (command bank select BK3, BK func enabled)
+      - [0xEF, 0x08]
+      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x10]    # CMD2_BKSEL (command bank select BK0, BK func disabled)
+      - [0xC0, 0x3B, 0x00]                      # Scan line
+      - [0xC1, 0x0B, 0x02]                      # VBP
+      - [0xC2, 0x07, 0x02]
+      - [0xCC, 0x10]
+      - [0xCD, 0x08]                            # RGB format | ?565??? 666??
+      - [0xB0, 0x00, 0x11, 0x16, 0x0e, 0x11, 0x06, 0x05, 0x09, 0x08, 0x21, 0x06, 0x13, 0x10, 0x29, 0x31, 0x18]   # IPS | 255 | 251 | 247 down | 239 | 231 | 203 | 175 | 147 | 108 | 80 | 52 | 24 | 16 | 8 down | 4 | 0
+      - [0xB1, 0x00, 0x11, 0x16, 0x0e, 0x11, 0x07, 0x05, 0x09, 0x09, 0x21, 0x05, 0x13, 0x11, 0x2a, 0x31, 0x18]   # IPS | 255 | 251 | 247 down | 239 | 231 | 203 | 175 | 147 | 108 | 80 | 52 | 24 | 16 | 8 down | 4 | 0
+      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x11]
+      - [0xB0, 0x6d]                            # VOP  3.5375+ *x 0.0125 | 5D
+      - [0xB1, 0x37]                            # VCOM amplitude setting
+      - [0xB2, 0x81]                            # VGH Voltage setting | 12V
+      - [0xB3, 0x80]
+      - [0xB5, 0x43]                            # VGL Voltage setting | -8.3V
+      - [0xB7, 0x85]
+      - [0xB8, 0x20]
+      - [0xC1, 0x78]
+      - [0xC2, 0x78]
+      - [0xD0, 0x88]
+      - [0xE0, 0x00, 0x00, 0x02]
+      - [0xE1, 0x03, 0xA0, 0x00, 0x00, 0x04, 0xA0, 0x00, 0x00, 0x00, 0x20, 0x20]
+      - [0xE2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+      - [0xE3, 0x00, 0x00, 0x11, 0x00]
+      - [0xE4, 0x22, 0x00]
+      - [0xE5, 0x05, 0xEC, 0xA0, 0xA0, 0x07, 0xEE, 0xA0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+      - [0xE6, 0x00, 0x00, 0x11, 0x00]
+      - [0xE7, 0x22, 0x00]
+      - [0xE8, 0x06, 0xED, 0xA0, 0xA0, 0x08, 0xEF, 0xA0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+      - [0xEB, 0x00, 0x00, 0x40, 0x40, 0x00, 0x00, 0x00]
+      - [0xED, 0xFF, 0xFF, 0xFF, 0xBA, 0x0A, 0xBF, 0x45, 0xFF, 0xFF, 0x54, 0xFB, 0xA0, 0xAB, 0xFF, 0xFF, 0xFF]
+      - [0xEF, 0x10, 0x0D, 0x04, 0x08, 0x3F, 0x1F]
+      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x13]    # CMD2_BKSEL (command bank select BK3, BK func enabled)
+      - [0xEF, 0x08]
+      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x00]    # CMD2_BKSEL (command bank select BK0, BK func disabled)
+      - [0x36, 0x00]                            # MADCTL_CMD (already in esphome ST7701S::write_init_sequence_)
+      - [0x3A, 0x66]                            # COLMOD 55/50=16bit(RGB565); 66=18bit(RGB666); 77?????3AH?=24bit(RGB888)
+      #- [0x11]                                  # SLEEP_OUT (already in esphome)
+      #- delay 120ms
+      #- [0x29]                                  # DISPLAY_ON (already in esphome)
+      #- delay 20ms
+

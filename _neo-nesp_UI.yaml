@@ -1,7 +1,239 @@
-# neo-nesp UI
+#
+# neo-nesp climate UI
+#
 
-packages:
-  colors: !include colors/HOMEASSISTANT
+globals:
+  - id: active_lvgl_page
+    type: std::string
+
+  # to be set by _neo-nesp_feature-*.yaml files
+  - id: feature_zones_enabled
+    type: int
+    initial_value: '0'
+  - id: feature_weather_enabled
+    type: int
+    initial_value: '0'
+  - id: feature_alarm_enabled
+    type: int
+    initial_value: '0'
+  - id: feature_train_enabled
+    type: int
+    initial_value: '0'
+
+time:
+  - id: hass_time
+    platform: homeassistant
+    on_time:
+      - hours: 2,3,4,5
+        minutes: 0
+        seconds: 0
+        then:
+          - switch.turn_on: switch_antiburn
+      - hours: 2,3,4,5
+        minutes: 45
+        seconds: 0
+        then:
+          - switch.turn_off: switch_antiburn
+      - hours: 0
+        minutes: 0
+        seconds: 0
+        then:
+          - script.execute: update_menu_date_label
+
+binary_sensor:
+  ### CENTRE PUSH BUTTON ACTIONS
+  - id: !extend push_button
+    on_click:
+      min_length: 50ms
+      max_length: 200ms
+      then:
+        #- script.execute:
+        #    id: vibrate
+        #    length_ms: 10
+        - light.turn_on: backlight
+        - if:
+            condition: lvgl.is_paused
+            then:
+              - lvgl.resume:
+              - lvgl.widget.redraw:
+        - if:
+            condition:
+              # only when on the main page
+              lambda: |-
+                return (strcmp(id(active_lvgl_page).c_str(), "hvac_page") == 0
+                  || strcmp(id(active_lvgl_page).c_str(), "weather_page") == 0
+                  || strcmp(id(active_lvgl_page).c_str(), "train_page") == 0
+                );
+            then:
+              - script.execute: goto_menu_page
+
+sensor:
+  ### ROTARY ENCODER ACTIONS
+  - id: !extend rotary
+    on_value:
+      - light.turn_on: backlight
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+    on_clockwise:
+      - if:
+          condition:
+            # set temp++ when on home page and not OFF or FAN
+            lambda: |-
+              return (strcmp(id(active_lvgl_page).c_str(), "hvac_page") == 0
+                && strcmp(id(hvac_mode).state.c_str(), "off") != 0
+                && strcmp(id(hvac_mode).state.c_str(), "fan_only") != 0
+                );
+          then:
+            - homeassistant.action:
+                action: climate.set_temperature
+                data:
+                  entity_id: ${climate_entity}
+                  temperature: !lambda return id(set_temperature).state + 0.5;
+    on_anticlockwise:
+      - if:
+          condition:
+            # set temp-- when on home page and not OFF or FAN
+            lambda: |-
+              return (strcmp(id(active_lvgl_page).c_str(), "hvac_page") == 0 
+                && strcmp(id(hvac_mode).state.c_str(), "off") != 0
+                && strcmp(id(hvac_mode).state.c_str(), "fan_only") != 0
+                );
+          then:
+            - homeassistant.action:
+                action: climate.set_temperature
+                data:
+                  entity_id: ${climate_entity}
+                  temperature: !lambda return id(set_temperature).state - 0.5;
+
+  ### HASS - HVAC SET TEMP
+  - platform: homeassistant
+    entity_id: ${climate_entity}
+    id: set_temperature
+    attribute: temperature
+    internal: true
+    on_value:
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          value: !lambda return x * 10;
+      - script.execute: update_diff_temp_arc
+      - lvgl.roller.update:
+          id: set_temp_roller
+          selected_index: !lambda return 2 * (x - 16);  # returns index of roller value
+
+  ### HASS - HVAC CURRENT TEMP
+  - platform: homeassistant
+    entity_id: ${climate_entity}
+    id: current_temperature
+    attribute: current_temperature
+    internal: true
+    filters:
+      - round: 1
+    on_value:
+      - lvgl.arc.update:
+          id: current_temp_arc
+          value: !lambda return x * 10;
+      - script.execute: update_diff_temp_arc
+      - lvgl.label.update:
+          id: current_temp_label
+          text:
+            format: "%.1f°C"
+            args: [ 'x' ]
+
+  ### HASS - HVAC CURRENT HUMIDITY
+  - platform: homeassistant
+    entity_id: ${climate_entity}
+    id: current_humidity
+    attribute: current_humidity
+    internal: true
+
+text_sensor:
+  ### HASS - HVAC MODE
+  - platform: homeassistant
+    entity_id: ${climate_entity}
+    id: hvac_mode
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.compare("off") == 0) {
+            id(set_mode_off).execute();
+          } else if (x.compare("heat") == 0) {
+            id(set_mode_heat).execute();
+          } else if (x.compare("cool") == 0) {
+            id(set_mode_cool).execute();
+          } else if (x.compare("fan_only") == 0) {
+            id(set_mode_fan).execute();
+          } else if (x.compare("dry") == 0) {
+            id(set_mode_dry).execute();
+          } else if (x.compare("heat_cool") == 0) {
+            id(set_mode_heat_cool).execute();
+          }
+
+  ### HASS - HVAC FAN SPEED
+  - platform: homeassistant
+    entity_id: ${climate_entity}
+    id: fan_mode
+    attribute: fan_mode
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.compare("auto") == 0) {
+            id(set_fan_auto).execute();
+          } else if (x.compare("low") == 0) {
+            id(set_fan_low).execute();
+          } else if (x.compare("medium") == 0) {
+            id(set_fan_medium).execute();
+          } else if (x.compare("high") == 0) {
+            id(set_fan_high).execute();
+          }
+
+  ### HASS - HVAC PRESET
+  - platform: homeassistant
+    entity_id: ${climate_entity}
+    id: preset_mode
+    attribute: preset_mode
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.compare("none") == 0) {
+            id(set_preset_none).execute();
+          } else if (x.compare("eco") == 0) {
+            id(set_preset_eco).execute();
+          } else if (x.compare("comfort") == 0) {
+            id(set_preset_comfort).execute();
+          } else if (x.compare("boost") == 0) {
+            id(set_preset_boost).execute();
+          }
+
+switch:
+  ### DISPLAY ANTI BURN-IN
+  - platform: template
+    name: Antiburn
+    id: switch_antiburn
+    icon: mdi:television-shimmer
+    optimistic: true
+    internal: true
+    turn_on_action:
+      - logger.log: "Starting Antiburn"
+      - light.turn_off: backlight
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - delay: 1s
+      - lvgl.pause:
+          show_snow: true
+    turn_off_action:
+      - logger.log: "Stopping Antiburn"
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+      - light.turn_on: backlight
 
 font:
   - file: 'gfonts://Roboto@400'
@@ -13,7 +245,6 @@ font:
       # https://pictogrammers.github.io
       - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
-          "\U000F050F", # mdi:thermometer
           "\U000F058E", # mdi:water-percent
           "\U000F0425", # mdi:power
           "\U000F0238", # mdi:fire
@@ -28,39 +259,8 @@ font:
           "\U000F032A", # mdi:leaf
           "\U000F04B9", # mdi:sofa
           "\U000F14DE", # mdi:rocket-launch
-          "\U000F0D80", # mdi:home-floor-1
-          "\U000F0D81", # mdi:home-floor-2
-          "\U000F081C", # mdi:door-open
-          "\U000F099D", # mdi:shield-lock
-          "\U000F099E", # mdi:shield-off
           "\U000F004D", # mdi:arrow-left
-          "\U000F0E03", # mdi:thermometer-chevron-up
-          "\U000F0E02", # mdi:thermometer-chevron-down
-          "\U000F1885", # mdi:flower-pollen
-          "\U000F0594", # mdi:weather-night (clear)
-          "\U000F0590", # mdi:weather-cloudy (cloudy)
-          "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
-          "\U000F0F30", # mdi:weather-hazy (dust, dusty, haze, hazy)
-          "\U000F0591", # mdi:weather-fog (fog)
-          "\U000F12CB", # mdi:snowflake-melt (frost)
-          "\U000F0596", # mdi:weather-pouring (heavy_shower, heavy_showers, rain)
-          "\U000F0F33", # mdi:weather-partly-rainy (light_rain)
-                        # mdi:weather-light-showers (light_shower, light_showers)
-          "\U000F0599", # mdi:weather-sunny (mostly_sunny, sunny)
-          "\U000F0595", # mdi:weather-partly-cloudy (partly_cloudy)
-          "\U000F0597", # mdi:weather-rainy (shower, showers)
-          "\U000F0598", # mdi:weather-snowy (snow)
-          "\U000F0593", # mdi:weather-lightning
-          "\U000F067E", # mdi:weather-lightning-rainy (storm, storms)
-          "\U000F059D", # mdi:weather-windy (wind, windy)
-          "\U000F0592", # mdi:weather-hail
           ]
-      - file: "neo-nesp/fonts/FontAwesome5-Solid+Brands+Regular.woff"
-        glyphs: [
-          "\uF00C", # checkmark
-          "\uF55A", # backspace
-        ]
-
   - file: 'gfonts://Roboto@400'
     glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–*•'
     id: roboto_med
@@ -70,7 +270,6 @@ font:
       # https://pictogrammers.github.io
       - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
-          "\U000F050F", # mdi:thermometer
           "\U000F058E", # mdi:water-percent
           "\U000F0425", # mdi:power
           "\U000F0238", # mdi:fire
@@ -85,13 +284,8 @@ font:
           "\U000F032A", # mdi:leaf
           "\U000F04B9", # mdi:sofa
           "\U000F14DE", # mdi:rocket-launch
-          "\U000F0D80", # mdi:home-floor-1
-          "\U000F0D81", # mdi:home-floor-2
-          "\U000F099D", # mdi:shield-lock
-          "\U000F099E", # mdi:shield-off
           "\U000F004D", # mdi:arrow-left
           ]
-
   - file: 'gfonts://Roboto@400'
     glyphs: ' -0123456789.°C'
     id: roboto_huge
@@ -105,59 +299,10 @@ font:
           "\U000F1472", # mdi:fan-speed-1
           "\U000F1473", # mdi:fan-speed-2
           "\U000F1474", # mdi:fan-speed-3
-          "\U000F0594", # mdi:weather-night (clear)
-          "\U000F0590", # mdi:weather-cloudy (cloudy)
-          "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
-          "\U000F0F30", # mdi:weather-hazy (dust, dusty, haze, hazy)
-          "\U000F0591", # mdi:weather-fog (fog)
-          "\U000F12CB", # mdi:snowflake-melt (frost)
-          "\U000F0596", # mdi:weather-pouring (heavy_shower, heavy_showers, rain)
-          "\U000F0F33", # mdi:weather-partly-rainy (light_rain)
-                        # mdi:weather-light-showers (light_shower, light_showers)
-          "\U000F0599", # mdi:weather-sunny (mostly_sunny, sunny)
-          "\U000F0595", # mdi:weather-partly-cloudy (partly_cloudy)
-          "\U000F0597", # mdi:weather-rainy (shower, showers)
-          "\U000F0598", # mdi:weather-snowy (snow)
-          "\U000F0593", # mdi:weather-lightning
-          "\U000F067E", # mdi:weather-lightning-rainy (storm, storms)
-          "\U000F059D", # mdi:weather-windy (wind, windy)
-          "\U000F0592", # mdi:weather-hail
           ]
 
-globals:
-  - id: active_lvgl_page
-    type: std::string
-
-### For alarm pincode entry
-key_collector:
-  - source_id: alarm_keypad
-    max_length: 4
-    end_keys: "#"
-    end_key_required: False
-    back_keys: "*"
-    allowed_keys: "0123456789*#"
-    timeout: 10s
-    on_progress:
-      - if:
-          condition:
-            lambda: return (x.compare(std::string{""}) != 0);
-          then:
-            - lvgl.textarea.update:
-                id: alarm_pin
-                text: !lambda 'return x.c_str();'
-    on_result:
-      - homeassistant.action:
-          action: alarm_control_panel.alarm_disarm
-          data:
-            entity_id: ${alarm_entity}
-            code: !lambda 'return x.c_str();'
-      - lvgl.textarea.update:
-          id: alarm_pin
-          text: ""
-    on_timeout:
-      - lvgl.textarea.update:
-          id: alarm_pin
-          text: ""
+packages:
+  colors: !include colors/HOMEASSISTANT
 
 lvgl:
   encoders:
@@ -166,12 +311,11 @@ lvgl:
   on_idle:
     timeout: !lambda 'return (id(display_timeout).state * 1000);'
     then:
-      - script.execute: goto_main_page
+      - script.execute: goto_home_page
   scrollbar_mode: "OFF"
-  default_font: roboto_reg
   bg_color: black
   text_color: white
-  gradients: !include colors/SEASONS
+  default_font: roboto_reg
   style_definitions:
     - id: style_menu_button
       align: CENTER
@@ -186,12 +330,12 @@ lvgl:
       text_font: roboto_med
   pages:
 
-    ### GUI - THERMOSTAT/WEATHER HOME PAGE
-    - id: main_page
+    ### GUI - THERMOSTAT HOME PAGE
+    - id: hvac_page
       on_load:
         - globals.set:
             id: active_lvgl_page
-            value: '"main_page"'
+            value: '"hvac_page"'
       widgets:
         - arc:
             id: arc_bg
@@ -327,105 +471,19 @@ lvgl:
             text_font: roboto_huge
             text: " "
         - label:
-            id: small_zone_1_icon
-            align: CENTER
-            x: -15
-            y: 90
-            text_color: graydarker
-            text: "\U000F0D80"
-        - label:
-            id: small_zone_2_icon
-            align: CENTER
-            x: 15
-            y: 90
-            text_color: graydarker
-            text: "\U000F0D81"
-        - label:
             id: current_temp_label
             align: CENTER
             y: 120
             text: " "
+        # XXX disabled: to enable, comment out text_opa
+        # XXX need to hide perimeter_label after
         - label:
             id: fan_icon_label
             align: CENTER
             y: 210
             text_font: roboto_med
             text: " "
-
-        - obj:
-            id: weather_bg
-            width: 480
-            height: 480
-            radius: 240
-            align: CENTER
-            border_width: 0
-            bg_opa: TRANSP
-        - label:
-            id: weather_icon_label
-            hidden: True
-            align: CENTER
-            y: -130
-            text_font: roboto_huge
-            text: "\U000F0599"
-        - label:
-            id: weather_temp_label
-            hidden: True
-            align: CENTER
-            y: -30
-            x: -40
-            text_font: roboto_huge
-            text: "00°C"
-        - label:
-            id: zone_2_temp_icon
-            hidden: True
-            align: CENTER
-            x: 90
-            y: -45
-            text_align: LEFT
-            text: "\U000F0D81"
-        - label:
-            id: zone_1_temp_icon
-            hidden: True
-            align: CENTER
-            x: 90
-            y: -15
-            text_align: LEFT
-            text: "\U000F0D80"
-        - label:
-            id: zone_temp_label
-            hidden: True
-            align: CENTER
-            x: 135
-            y: -32
-            text_align: LEFT
-            text: "00°C\n00°C"
-        - label:
-            id: weather_feels_like_label
-            hidden: True
-            align: CENTER
-            y: 50
-            text: "Feels like 00°C"
-        - label:
-            id: weather_now_later_label
-            hidden: True
-            align: CENTER
-            y: 110
-            text: "\U000F050F 00–00°C"
-        - label:
-            id: weather_aux_label
-            hidden: True
-            align: CENTER
-            y: 145
-            text: "\U000F0599 00–00°C tmr."
-        - label:
-            id: perimeter_label
-            hidden: True
-            align: CENTER
-            y: 200
-            text_align: CENTER
-            text_color: red
-            bg_color: black
-            text: " "
+            text_opa: TRANSP
 
     ### GUI - MAIN MENU
     - id: menu_page
@@ -435,52 +493,36 @@ lvgl:
             value: '"menu_page"'
         - script.execute: update_menu_date_label
         - lvgl.widget.enable:
+            - menu_arm_button
             - menu_zone_2_button
             - menu_zone_1_button
             - menu_back_button
-            - menu_arm_button
             - menu_mode_button
             - menu_preset_button
             - menu_fan_button
-        - lvgl.widget.focus: menu_arm_button
+            - menu_train_button
+            - menu_weather_button
+        - lvgl.widget.focus: menu_mode_button
       on_unload:
         - lvgl.widget.disable:
+            - menu_arm_button
             - menu_zone_2_button
             - menu_zone_1_button
             - menu_back_button
-            - menu_arm_button
             - menu_mode_button
             - menu_preset_button
             - menu_fan_button
+            - menu_train_button
+            - menu_weather_button
       widgets:
         - label:
             id: menu_date_label
             align: LEFT_MID
-            x: 60
+            x: 45
             y: -65
             text_align: LEFT
             text_color: gray
             text: "SUN 1/01"
-        - label:
-            id: menu_weather_rain_label
-            align: LEFT_MID
-            x: 30
-            y: -25
-            text: "\U000F0596 0mm"
-        - label:
-            id: menu_weather_uv_label
-            align: LEFT_MID
-            x: 30
-            y: 15
-            text_align: LEFT
-            text: "\U000F1A45 UV n/a"
-        - label:
-            id: menu_weather_pollen_label
-            align: LEFT_MID
-            x: 30
-            y: 55
-            text_align: LEFT
-            text: "\U000F1885 pollen n/a"
         - label:
             id: selected_menu_label
             align: CENTER
@@ -488,7 +530,30 @@ lvgl:
             text_font: roboto_med
             text_align: RIGHT
         - button:
+            id: menu_arm_button
+            hidden: True      # unhidden at _neo-nesp_feature-alarm
+            state:
+              disabled: True
+            x: -105
+            y: -182
+            styles: style_menu_button
+            focused:
+              outline_color: pure_cyan
+              outline_width: 3
+              outline_pad: 3
+            widgets:
+              - label:
+                  styles: style_menu_button_label
+                  text: "\U000F099D"
+            on_focus:
+              - lvgl.label.update:
+                  id: selected_menu_label
+                  text: "Arm\nAlarm"
+            on_press:
+              - script.execute: feature_menu_alarm_arm
+        - button:
             id: menu_zone_2_button
+            hidden: True      # unhidden at _neo-nesp_feature-zones
             state:
               disabled: True
             x: 0
@@ -507,12 +572,10 @@ lvgl:
                   id: selected_menu_label
                   text: "Upstairs\nZone"
             on_press:
-              - homeassistant.action:
-                  action: cover.toggle
-                  data:
-                    entity_id: ${zone_2_entity}
+              - script.execute: feature_menu_zone_2_toggle
         - button:
             id: menu_zone_1_button
+            hidden: True      # unhidden at _neo-nesp_feature-zones
             state:
               disabled: True
             x: 105    # 210sin(30) clock coords
@@ -533,10 +596,7 @@ lvgl:
                   id: selected_menu_label
                   text: "Downstairs\nZone"
             on_press:
-              - homeassistant.action:
-                  action: cover.toggle
-                  data:
-                    entity_id: ${zone_1_entity}
+              - script.execute: feature_menu_zone_1_toggle
         - button:
             id: menu_back_button
             state:
@@ -557,9 +617,9 @@ lvgl:
                   id: selected_menu_label
                   text: "Back"
             on_press:
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
-            id: menu_arm_button
+            id: menu_mode_button
             state:
               disabled: True
             x: 210
@@ -571,33 +631,9 @@ lvgl:
               outline_pad: 3
             widgets:
               - label:
-                  styles: style_menu_button_label
-                  text: "\U000F099D"
-            on_focus:
-              - lvgl.label.update:
-                  id: selected_menu_label
-                  text: "Arm\nAlarm"
-            on_press:
-              - homeassistant.action:
-                  action: alarm_control_panel.alarm_arm_away
-                  data:
-                    entity_id: ${alarm_entity}
-        - button:
-            id: menu_mode_button
-            state:
-              disabled: True
-            x: 182
-            y: 105
-            styles: style_menu_button
-            focused:
-              outline_color: pure_cyan
-              outline_width: 3
-              outline_pad: 3
-            widgets:
-              - label:
                   id: menu_mode_button_label
                   styles: style_menu_button_label
-                  text: "\U000F0238"
+                  text: "\U000F0425"
             on_focus:
               - lvgl.label.update:
                   id: selected_menu_label
@@ -608,8 +644,8 @@ lvgl:
             id: menu_preset_button
             state:
               disabled: True
-            x: 105
-            y: 182
+            x: 182
+            y: 105
             styles: style_menu_button
             focused:
               outline_color: pure_cyan
@@ -630,13 +666,13 @@ lvgl:
             id: menu_fan_button
             state:
               disabled: True
+            x: 105
+            y: 182
             styles: style_menu_button
             focused:
               outline_color: pure_cyan
               outline_width: 3
               outline_pad: 3
-            x: 0
-            y: 210
             widgets:
               - label:
                   id: menu_fan_button_label
@@ -648,6 +684,51 @@ lvgl:
                   text: "Fan\nSpeed"
             on_press:
               - script.execute: goto_fan_page
+        - button:
+            id: menu_weather_button
+            hidden: True      # unhidden at _neo-nesp_feature-weather
+            state:
+              disabled: True
+            x: 0
+            y: 210
+            styles: style_menu_button
+            focused:
+              outline_color: pure_cyan
+              outline_width: 3
+              outline_pad: 3
+            widgets:
+              - label:
+                  id: menu_weather_button_label
+                  styles: style_menu_button_label
+                  text: "\U000F0599"
+            on_focus:
+              - lvgl.label.update:
+                  id: selected_menu_label
+                  text: "Weather"
+            on_press:
+              - script.execute: feature_menu_goto_weather_page
+        - button:
+            id: menu_train_button
+            hidden: True      # unhidden at _neo-nesp_feature-train
+            state:
+              disabled: True
+            x: -105
+            y: 182
+            styles: style_menu_button
+            focused:
+              outline_color: pure_cyan
+              outline_width: 3
+              outline_pad: 3
+            widgets:
+              - label:
+                  styles: style_menu_button_label
+                  text: "\U000F052C"
+            on_focus:
+              - lvgl.label.update:
+                  id: selected_menu_label
+                  text: "Next\nTrain"
+            on_press:
+              - script.execute: feature_menu_goto_train_page
 
     ### GUI - HVAC MODE SUBMENU
     - id: mode_page
@@ -733,7 +814,7 @@ lvgl:
                   action: climate.toggle
                   data:
                     entity_id: ${climate_entity}
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: mode_heat_cool_button
             state:
@@ -759,7 +840,7 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     hvac_mode: "heat_cool"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: mode_cool_button
             state:
@@ -785,7 +866,7 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     hvac_mode: "cool"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: mode_heat_button
             state:
@@ -811,7 +892,7 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     hvac_mode: "heat"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: mode_fan_button
             state:
@@ -837,7 +918,7 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     hvac_mode: "fan_only"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: mode_dry_button
             state:
@@ -863,7 +944,7 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     hvac_mode: "dry"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
 
     ### GUI - PRESET SUBMENU
     - id: preset_page
@@ -946,7 +1027,7 @@ lvgl:
                         data:
                           entity_id: ${climate_entity}
                           preset_mode: "eco"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: preset_comfort_button
             state:
@@ -982,7 +1063,7 @@ lvgl:
                         data:
                           entity_id: ${climate_entity}
                           preset_mode: "comfort"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: preset_boost_button
             state:
@@ -1018,7 +1099,7 @@ lvgl:
                         data:
                           entity_id: ${climate_entity}
                           preset_mode: "boost"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
 
     ### GUI - FAN SPEED SUBMENU
     - id: fan_page
@@ -1093,7 +1174,7 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     fan_mode: "auto"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: fan_high_button
             state:
@@ -1119,7 +1200,7 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     fan_mode: "high"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: fan_medium_button
             state:
@@ -1145,7 +1226,7 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     fan_mode: "medium"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
         - button:
             id: fan_low_button
             state:
@@ -1171,107 +1252,457 @@ lvgl:
                   data:
                     entity_id: ${climate_entity}
                     fan_mode: "low"
-              - script.execute: goto_main_page
+              - script.execute: goto_home_page
 
-    ### GUI - ALARM KEYPAD
-    - id: alarm_page
-      on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"alarm_page"'
-        - lvgl.widget.enable:
-            - alarm_keypad
-        - lvgl.widget.focus:
-            id: alarm_keypad
-            editing: True
-            freeze: True
-      on_unload:
-        - lvgl.widget.disable:
-            - alarm_keypad
-      widgets:
-        - arc:
-            id: alarm_bg
-            height: 480
-            width: 480
-            align: CENTER
-            arc_color: graylight
-            arc_opa: COVER
-            arc_width: 20
-            start_angle: 0
-            end_angle: 360
-        - label:
-            id: alarm_label
-            align: CENTER
-            y: -160
-            text: "HOME SECURITY"
-        - textarea:
-            id: alarm_pin
-            state:
-              disabled: True
-            width: 200
-            align: CENTER
-            y: -100
-            one_line: True
-            password_mode: True
-            bg_opa: TRANSP
-            text_align: CENTER
-        - buttonmatrix:
-            id: alarm_keypad
-            state:
-              disabled: True
-            width: 300
-            height: 250
-            align: BOTTOM_MID
-            y: -55
-            bg_opa: TRANSP
-            border_opa: TRANSP
-            edited:
-              outline_width: 0
-            items:
-              edited:
-                outline_color: pure_cyan
-                outline_width: 3
-                outline_pad: 3
-            rows:
-              - buttons:
-                  - text: 1
-                    control:
-                      no_repeat: True
-                  - text: 2
-                    control:
-                      no_repeat: True
-                  - text: 3
-                    control:
-                      no_repeat: True
-              - buttons:
-                  - text: 4
-                    control:
-                      no_repeat: True
-                  - text: 5
-                    control:
-                      no_repeat: True
-                  - text: 6
-                    control:
-                      no_repeat: True
-              - buttons:
-                  - text: 7
-                    control:
-                      no_repeat: True
-                  - text: 8
-                    control:
-                      no_repeat: True
-                  - text: 9
-                    control:
-                      no_repeat: True
-              - buttons:
-                  - text: "\uF55A"
-                    key_code: "*"
-                    control:
-                      no_repeat: True
-                  - text: 0
-                    control:
-                      no_repeat: True
-                  - text: "\uF00C"
-                    key_code: "#"
-                    control:
-                      no_repeat: True
+script:
+  # HVAC UI LOGIC
+  - id: set_mode_off
+    then:
+      - script.execute: goto_home_page
+      - script.execute: hide_big_fan_widget
+      - lvgl.label.update:
+          id: mode_label
+          text: "OFF"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: black
+      - light.turn_off: rgb_ring
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: white
+          text: "\U000F0425"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_heat
+    then:
+      - script.execute: goto_home_page
+      - script.execute: hide_big_fan_widget
+      - lvgl.label.update:
+          id: mode_label
+          text: "HEAT TO"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: mode_heat
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.533
+          blue:  0.118
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_heat
+          text: "\U000F0238"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: mode_heat
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_cool
+    then:
+      - script.execute: goto_home_page
+      - script.execute: hide_big_fan_widget
+      - lvgl.label.update:
+          id: mode_label
+          text: "COOL TO"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: mode_cool
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   0.498
+          green: 0.675
+          blue:  1.000
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_cool
+          text: "\U000F0717"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: mode_cool
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_fan
+    then:
+      - script.execute: goto_home_page
+      - script.execute: show_big_fan_widget
+      - lvgl.label.update:
+          id: mode_label
+          text: "FAN ONLY"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: mode_fan
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   0.749
+          green: 0.980
+          blue:  1.000
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_fan
+          text: "\U000F0210"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: mode_fan
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_dry
+    then:
+      - script.execute: goto_home_page
+      - script.execute: hide_big_fan_widget
+      - lvgl.label.update:
+          id: mode_label
+          text: "DEHUMIDIFY"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: mode_dry
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.753
+          blue:  0.549
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_dry
+          text: "\U000F058E"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: mode_dry
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: white
+  - id: set_mode_heat_cool
+    then:
+      - script.execute: goto_home_page
+      - script.execute: hide_big_fan_widget
+      - lvgl.label.update:
+          id: mode_label
+          text: "AUTO TO"
+      - lvgl.widget.update:
+          id: mode_bg
+          bg_color: graylight
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.894
+          blue:  0.804
+      - lvgl.label.update:
+          id: menu_mode_button_label
+          text_color: mode_heat_cool
+          text: "\U000F1A79"
+      - lvgl.widget.update:
+          id: mode_heat_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_cool_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_fan_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_dry_button
+          text_color: white
+      - lvgl.widget.update:
+          id: mode_heat_cool_button
+          text_color: mode_heat_cool
+
+  - id: update_diff_temp_arc
+    then:
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          start_value: !lambda |-
+            return id(set_temperature).state < id(current_temperature).state ? id(set_temperature).state * 10 : id(current_temperature).state * 10;
+          end_value: !lambda |-
+            return id(set_temperature).state < id(current_temperature).state ? id(current_temperature).state * 10 : id(set_temperature).state * 10;
+
+  - id: show_big_fan_widget
+    then:
+      - lvgl.widget.hide:
+          - current_temp_arc
+          - set_temp_roller
+          - celsius_label
+          - current_temp_label
+          - fan_icon_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: TRANSP
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: TRANSP
+      - lvgl.widget.show:
+          - big_fan_mode_icon
+  - id: hide_big_fan_widget
+    then:
+      - lvgl.widget.hide:
+          - big_fan_mode_icon
+      - lvgl.widget.show:
+          - current_temp_arc
+          - set_temp_roller
+          - celsius_label
+          - current_temp_label
+          - fan_icon_label
+      - lvgl.indicator.update:
+          id: set_temp_needle
+          opa: COVER
+      - lvgl.indicator.update:
+          id: diff_temp_arc
+          opa: COVER
+
+  # MENU UI LOGIC
+  - id: update_menu_date_label
+    then:
+      - lvgl.label.update:
+          id: menu_date_label
+          text: !lambda |-
+            auto now = id(hass_time).now();
+            static const char * const day_names[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            static char buf[10];
+            snprintf(buf, sizeof(buf), "%s %d/%02d", day_names[now.day_of_week-1], now.day_of_month, now.month);
+            return buf;
+
+  # PRESET UI LOGIC
+  - id: set_preset_none
+    then:
+      - lvgl.label.update:
+          id: menu_preset_button_label
+          text_color: white
+          text: "\U000F032A"
+      - lvgl.widget.update:
+          id: preset_eco_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_comfort_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_boost_button
+          text_color: white
+  - id: set_preset_eco
+    then:
+      - lvgl.label.update:
+          id: menu_preset_button_label
+          text_color: green
+          text: "\U000F032A"
+      - lvgl.widget.update:
+          id: preset_eco_button
+          text_color: green
+      - lvgl.widget.update:
+          id: preset_comfort_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_boost_button
+          text_color: white
+  - id: set_preset_comfort
+    then:
+      - lvgl.label.update:
+          id: menu_preset_button_label
+          text_color: amber
+          text: "\U000F04B9"
+      - lvgl.widget.update:
+          id: preset_eco_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_comfort_button
+          text_color: amber
+      - lvgl.widget.update:
+          id: preset_boost_button
+          text_color: white
+  - id: set_preset_boost
+    then:
+      - lvgl.label.update:
+          id: menu_preset_button_label
+          text_color: red
+          text: "\U000F14DE"
+      - lvgl.widget.update:
+          id: preset_eco_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_comfort_button
+          text_color: white
+      - lvgl.widget.update:
+          id: preset_boost_button
+          text_color: red
+
+  # FAN UI LOGIC
+  - id: set_fan_auto
+    then:
+      - lvgl.label.update:
+          id: big_fan_mode_icon
+          text: "\U000F171D"
+      - lvgl.label.update:
+          id: fan_icon_label
+          text: "\U000F171D"
+      - lvgl.label.update:
+          id: menu_fan_button_label
+          text: "\U000F171D"
+  - id: set_fan_low
+    then:
+      - lvgl.label.update:
+          id: big_fan_mode_icon
+          text: "\U000F1472"
+      - lvgl.label.update:
+          id: fan_icon_label
+          text: "\U000F1472"
+      - lvgl.label.update:
+          id: menu_fan_button_label
+          text: "\U000F1472"
+  - id: set_fan_medium
+    then:
+      - lvgl.label.update:
+          id: big_fan_mode_icon
+          text: "\U000F1473"
+      - lvgl.label.update:
+          id: fan_icon_label
+          text: "\U000F1473"
+      - lvgl.label.update:
+          id: menu_fan_button_label
+          text: "\U000F1473"
+  - id: set_fan_high
+    then:
+      - lvgl.label.update:
+          id: big_fan_mode_icon
+          text: "\U000F1474"
+      - lvgl.label.update:
+          id: fan_icon_label
+          text: "\U000F1474"
+      - lvgl.label.update:
+          id: menu_fan_button_label
+          text: "\U000F1474"
+
+  # MISC - PAGE NAVIGATION
+  - id: goto_home_page
+    then:
+      if:
+        condition:
+          lambda: 'return id(feature_train_enabled) == 1 && id(hass_time).now().hour == 8;'
+        then:
+          script.execute: goto_train_page
+        else:
+          if:
+            condition:
+              lambda: 'return id(feature_weather_enabled) == 1 && strcmp(id(hvac_mode).state.c_str(), "off") == 0;'
+            then:
+              script.execute: goto_weather_page
+            else:
+              script.execute: goto_hvac_page
+  - id: goto_hvac_page
+    then:
+      - lvgl.page.show:
+          id: hvac_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_menu_page
+    then:
+      - lvgl.page.show:
+          id: menu_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_mode_page
+    then:
+      - lvgl.page.show:
+          id: mode_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_preset_page
+    then:
+      - lvgl.page.show:
+          id: preset_page
+          animation: FADE_IN
+          time: 500ms
+  - id: goto_fan_page
+    then:
+      - lvgl.page.show:
+          id: fan_page
+          animation: FADE_IN
+          time: 500ms
+
+  # MISC - FEATURE PLACEHOLDER SCRIPTS
+  - id: goto_weather_page               # defined in _neo-nesp_feature-weather
+    then:
+      - delay: 1ms
+  - id: goto_alarm_page                 # defined in _neo-nesp_feature-alarm
+    then:
+      - delay: 1ms
+  - id: goto_train_page                 # defined in _neo-nesp_feature-train
+    then:
+      - delay: 1ms
+  - id: feature_menu_alarm_arm          # defined in _neo-nesp_feature-alarm
+    then:
+      - delay: 1ms
+  - id: feature_menu_zone_1_toggle      # defined in _neo-nesp_feature-zones
+    then:
+      - delay: 1ms
+  - id: feature_menu_zone_2_toggle      # defined in _neo-nesp_feature-zones
+    then:
+      - delay: 1ms
+  - id: feature_menu_goto_weather_page  # defined in _neo-nesp_feature-train
+    then:
+      - delay: 1ms
+  - id: feature_menu_goto_train_page    # defined in _neo-nesp_feature-train
+    then:
+      - delay: 1ms
+
+  # MISC - VIBRATION MOTOR SCRIPT
+  - id: vibrate
+    parameters:
+      length_ms: int
+    then:
+      # XXX doesn't seem to delay properly for short lengths (10-100ms)
+      - switch.turn_on: vibration
+      - delay: !lambda return length_ms;
+      - switch.turn_off: vibration

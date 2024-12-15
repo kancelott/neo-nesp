@@ -1,0 +1,346 @@
+#
+# neo-nesp optional feature: alarm keypad
+#
+
+esphome:
+  name: !extend ${hostname}
+  on_boot:
+    - globals.set:
+        id: feature_alarm_enabled
+        value: '1'
+
+text_sensor:
+    ### HASS - Alarm
+  - platform: homeassistant
+    entity_id: ${alarm_entity}
+    id: alarm_state
+    internal: true
+    on_value:
+    - lambda: |-
+        if (x.compare("disarmed") == 0) {
+          id(update_alarm_disarmed).execute();
+        } else if (x.compare("arming") == 0) {
+          id(update_alarm_arming).execute();
+        } else if (x.compare("armed_away") == 0 || x.compare("armed_home") == 0 || x.compare("armed_night") == 0 || x.compare("armed_vacation") == 0 || x.compare("armed_custom_bypass") == 0) {
+          id(update_alarm_armed).execute();
+        } else if (x.compare("pending") == 0) {
+          id(update_alarm_pending).execute();
+        } else if (x.compare("disarming") == 0) {
+          id(update_alarm_disarming).execute();
+        } else if (x.compare("triggered") == 0) {
+          id(update_alarm_triggered).execute();
+        }
+
+  ### HASS - Perimeter Trigger
+  - platform: homeassistant
+    entity_id: ${alarm_perimeter_entity}
+    id: perimeter
+    internal: true
+    on_value:
+      - if:
+          condition:
+            lambda: 'return x.compare("") == 0;'
+          then:
+            - lvgl.label.update:
+                id: perimeter_label
+                text: " "
+          else:
+            - lvgl.label.update:
+                id: perimeter_label
+                text: !lambda |-
+                  static char buf[40];
+                  snprintf(buf, sizeof(buf), "  \U000F081C %s  ", x.c_str());
+                  return buf;
+
+# XXX doesn't seem to work well with on_click
+#binary_sensor:
+#  - id: !extend push_button
+#    on_double_click:
+#      min_length: 100ms
+#      max_length: 500ms
+#      then:
+#        #- script.execute:
+#        #    id: vibrate
+#        #    length_ms: 10
+#        - light.turn_on: backlight
+#        - if:
+#            condition: lvgl.is_paused
+#            then:
+#              - lvgl.resume:
+#              - lvgl.widget.redraw:
+#        - if:
+#            condition:
+#              # only when on the main page
+#              lambda: |-
+#                return (strcmp(id(active_lvgl_page).c_str(), "hvac_page") == 0
+#                  || strcmp(id(active_lvgl_page).c_str(), "weather_page") == 0
+#                  || strcmp(id(active_lvgl_page).c_str(), "train_page") == 0
+#                );
+#            then:
+#              - script.execute: feature_menu_alarm_arm
+
+key_collector:
+    ### For alarm pincode entry
+  - source_id: alarm_keypad
+    max_length: 4
+    end_keys: "#"
+    end_key_required: False
+    back_keys: "*"
+    allowed_keys: "0123456789*#"
+    timeout: 15s
+    on_progress:
+      - lvgl.textarea.update:
+          id: alarm_pin
+          text: !lambda 'return x.c_str();'
+    on_result:
+      - homeassistant.action:
+          action: alarm_control_panel.alarm_disarm
+          data:
+            entity_id: ${alarm_entity}
+            code: !lambda 'return x.c_str();'
+      - lvgl.textarea.update:
+          id: alarm_pin
+          text: ""
+    on_timeout:
+      - lvgl.textarea.update:
+          id: alarm_pin
+          text: ""
+
+font:
+  - id: !extend roboto_reg
+    extras:
+      - file: "neo-nesp/fonts/FontAwesome5-Solid+Brands+Regular.woff"
+        glyphs: [
+          "\uF00C", # checkmark
+          "\uF55A", # backspace
+          ]
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F099D", # mdi:shield-lock
+          "\U000F099E", # mdi:shield-off
+          "\U000F081C", # mdi:door-open
+          ]
+  - id: !extend roboto_med
+    extras:
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F099D", # mdi:shield-lock
+          "\U000F099E", # mdi:shield-off
+          "\U000F081C", # mdi:door-open
+          ]
+
+lvgl:
+  pages:
+    - id: !extend hvac_page
+      widgets:
+        - label:
+            id: perimeter_label
+            align: CENTER
+            y: 205
+            text_align: CENTER
+            text_color: red
+            text: " "
+
+    - id: !extend menu_page
+      on_load:
+        - lvgl.widget.show:
+            - menu_arm_button
+
+    ### GUI - ALARM KEYPAD
+    - id: alarm_page
+      on_load:
+        - globals.set:
+            id: active_lvgl_page
+            value: '"alarm_page"'
+        - lvgl.widget.enable:
+            - alarm_keypad
+        - lvgl.widget.focus:
+            id: alarm_keypad
+            editing: True
+            freeze: True
+      on_unload:
+        - lvgl.widget.disable:
+            - alarm_keypad
+      widgets:
+        - arc:
+            id: alarm_bg
+            height: 480
+            width: 480
+            align: CENTER
+            arc_color: graylight
+            arc_opa: COVER
+            arc_width: 20
+            start_angle: 0
+            end_angle: 360
+        - label:
+            id: alarm_label
+            align: CENTER
+            y: -160
+            text: "HOME SECURITY"
+        - textarea:
+            id: alarm_pin
+            state:
+              disabled: True
+            width: 200
+            align: CENTER
+            y: -100
+            one_line: True
+            password_mode: True
+            bg_opa: TRANSP
+            text_align: CENTER
+        - buttonmatrix:
+            id: alarm_keypad
+            state:
+              disabled: True
+            width: 300
+            height: 250
+            align: BOTTOM_MID
+            y: -55
+            bg_opa: TRANSP
+            border_opa: TRANSP
+            edited:
+              outline_width: 0
+            items:
+              edited:
+                outline_color: pure_cyan
+                outline_width: 3
+                outline_pad: 3
+            rows:
+              - buttons:
+                  - text: 1
+                    control:
+                      no_repeat: True
+                  - text: 2
+                    control:
+                      no_repeat: True
+                  - text: 3
+                    control:
+                      no_repeat: True
+              - buttons:
+                  - text: 4
+                    control:
+                      no_repeat: True
+                  - text: 5
+                    control:
+                      no_repeat: True
+                  - text: 6
+                    control:
+                      no_repeat: True
+              - buttons:
+                  - text: 7
+                    control:
+                      no_repeat: True
+                  - text: 8
+                    control:
+                      no_repeat: True
+                  - text: 9
+                    control:
+                      no_repeat: True
+              - buttons:
+                  - text: "\uF55A"
+                    key_code: "*"
+                    control:
+                      no_repeat: True
+                  - text: 0
+                    control:
+                      no_repeat: True
+                  - text: "\uF00C"
+                    key_code: "#"
+                    control:
+                      no_repeat: True
+
+script:
+  - id: !extend goto_alarm_page
+    then:
+      - lvgl.page.show:
+          id: alarm_page
+          animation: FADE_IN
+          time: 500ms
+
+  - id: !extend feature_menu_alarm_arm
+    then:
+      - homeassistant.action:
+          action: alarm_control_panel.alarm_arm_away
+          data:
+            entity_id: ${alarm_entity}
+
+  # ALARM UI LOGIC
+  - id: update_alarm_disarmed
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "DISARMED"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: graylight
+      - light.turn_off: rgb_ring
+      - script.execute: goto_home_page
+
+  - id: update_alarm_arming
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMING"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Arming"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: deep_orange
+      - script.execute: goto_alarm_page
+
+  - id: update_alarm_armed
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMED"
+      - light.turn_off: rgb_ring
+      - light.turn_on:
+          id: rgb_ring
+          brightness: 100%
+          red:   1.000
+          green: 0.000
+          blue:  0.000
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+
+  - id: update_alarm_pending
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ARMED"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Pending"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+
+  - id: update_alarm_disarming
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "DISARMING"
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Pending"
+      - lvgl.widget.update:
+          id: alarm_bg
+          arc_color: red
+      - script.execute: goto_alarm_page
+
+  - id: update_alarm_triggered
+    then:
+      - lvgl.label.update:
+          id: alarm_label
+          text: "ALARM!"
+      - lvgl.widget.update:
+          id: alarm_bg
+          bg_color: red
+      - light.turn_on:
+          id: rgb_ring
+          effect: "Police"
+      - script.execute: goto_alarm_page

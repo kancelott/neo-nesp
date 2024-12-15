@@ -1,0 +1,309 @@
+#
+# neo-nesp optional feature: climate zones cover support (2 supported)
+#
+
+esphome:
+  name: !extend ${hostname}
+  on_boot:
+    - globals.set:
+        id: feature_zones_enabled
+        value: '1'
+
+sensor:
+  ### HASS - ZONE 1 TEMPERATURE
+  - platform: homeassistant
+    entity_id: ${zone_1_temp_entity}
+    id: zone_1_temp
+    internal: true
+    filters:
+      - round: 1
+    on_value:
+      - script.execute: update_zone_temp_label
+
+  ### HASS - ZONE 2 TEMPERATURE
+  - platform: homeassistant
+    entity_id: ${zone_2_temp_entity}
+    id: zone_2_temp
+    internal: true
+    filters:
+      - round: 1
+    on_value:
+      - script.execute: update_zone_temp_label
+
+  ### HASS - ZONE 1 HUMIDITY
+  - platform: homeassistant
+    entity_id: ${zone_1_humidity_entity}
+    id: zone_1_humidity
+    internal: true
+    filters:
+      - round: 0
+    on_value:
+      - script.execute: update_zone_temp_label
+
+  ### HASS - ZONE 2 HUMIDITY
+  - platform: homeassistant
+    entity_id: ${zone_2_humidity_entity}
+    id: zone_2_humidity
+    internal: true
+    filters:
+      - round: 0
+    on_value:
+      - script.execute: update_zone_temp_label
+
+  ### HASS - SOLAR GENERATION
+  - platform: homeassistant
+    entity_id: ${solar_generation_entity}
+    id: solar_generation
+    internal: true
+    filters:
+      - round: 1
+    on_value:
+      - script.execute: update_menu_solar_label
+
+  ### HASS - SOLAR CONSUMPTION
+  - platform: homeassistant
+    entity_id: ${solar_consumption_entity}
+    id: solar_consumption
+    internal: true
+    filters:
+      - round: 1
+    on_value:
+      - script.execute: update_menu_solar_label
+
+text_sensor:
+    ### HASS - ZONE 1
+  - platform: homeassistant
+    entity_id: ${zone_1_entity}
+    id: zone_1
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.compare("open") == 0) {
+            id(set_zone_1).execute();
+          } else if (x.compare("closed") == 0) {
+            id(unset_zone_1).execute();
+          }
+
+    ### HASS - ZONE 2
+  - platform: homeassistant
+    entity_id: ${zone_2_entity}
+    id: zone_2
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.compare("open") == 0) {
+            id(set_zone_2).execute();
+          } else if (x.compare("closed") == 0) {
+            id(unset_zone_2).execute();
+          }
+
+font:
+  - id: !extend roboto_reg
+    extras:
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F0D80", # mdi:home-floor-1
+          "\U000F0D81", # mdi:home-floor-2
+          "\U000F1903", # mdi:home-lightning-bolt
+          "\U000F1A73", # mdi:solar-power-variant
+          ]
+  - id: !extend roboto_med
+    extras:
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F0D80", # mdi:home-floor-1
+          "\U000F0D81", # mdi:home-floor-2
+          ]
+
+lvgl:
+  pages:
+    - id: !extend hvac_page
+      widgets:
+        - label:
+            id: home_zone_1_icon
+            align: CENTER
+            x: -15
+            y: 90
+            text: "\U000F0D80"
+            text_color: graydark
+        - label:
+            id: home_zone_2_icon
+            align: CENTER
+            x: 15
+            y: 90
+            text: "\U000F0D81"
+            text_color: graydark
+
+    - id: !extend menu_page
+      on_load:
+        - lvgl.widget.show:
+          - menu_zone_2_button
+          - menu_zone_1_button
+      widgets:
+        - label:
+            id: menu_zone_1_icon_label
+            align: LEFT_MID
+            x: 15
+            y: 17
+            text_align: LEFT
+            text: "\U000F0D80"
+            text_color: graydark
+        - label:
+            id: menu_zone_1_temp_label
+            align: LEFT_MID
+            x: 45
+            y: 15
+            text_align: LEFT
+            text: "00°C"
+        - label:
+            id: menu_zone_2_icon_label
+            align: LEFT_MID
+            x: 124
+            y: 17
+            text_align: LEFT
+            text: "\U000F0D81"
+            text_color: graydark
+        - label:
+            id: menu_zone_2_temp_label
+            align: LEFT_MID
+            x: 154
+            y: 15
+            text_align: LEFT
+            text: "00°C"
+        - label:
+            id: menu_solar_label
+            align: LEFT_MID
+            x: 15
+            y: 55
+            text_align: LEFT
+            text: "\U000F1903 0.0 kW \U000F1A73 0.0 kW"
+
+    - id: !extend weather_page
+      widgets:
+        - label:
+            id: weather_zone_2_icon
+            align: CENTER
+            x: 90
+            y: -45
+            text_align: LEFT
+            text: "\U000F0D81"
+            text_color: graydark
+        - label:
+            id: weather_zone_1_icon
+            align: CENTER
+            x: 90
+            y: -15
+            text_align: LEFT
+            text: "\U000F0D80"
+            text_color: graydark
+        - label:
+            id: weather_zone_temp_label
+            align: CENTER
+            x: 135
+            y: -32
+            text_align: LEFT
+            text: "00°C\n00°C"
+
+script:
+  - id: !extend feature_menu_zone_1_toggle
+    then:
+      - homeassistant.action:
+          action: cover.toggle
+          data:
+            entity_id: ${zone_1_entity}
+
+  - id: !extend feature_menu_zone_2_toggle
+    then:
+      - homeassistant.action:
+          action: cover.toggle
+          data:
+            entity_id: ${zone_2_entity}
+
+  # ZONING UI LOGIC
+  - id: update_zone_temp_label
+    then:
+      - lvgl.label.update:
+          id: weather_zone_temp_label
+          text:
+            format: "%.0f°C\n%.0f°C"
+            args: [ 'round(id(zone_2_temp).state)', 'round(id(zone_1_temp).state)' ]
+      - lvgl.label.update:
+          id: menu_zone_1_temp_label
+          text:
+            format: "%.1f°C"
+            args: [ 'id(zone_1_temp).state' ]
+      - lvgl.label.update:
+          id: menu_zone_2_temp_label
+          text:
+            format: "%.1f°C"
+            args: [ 'id(zone_2_temp).state' ]
+
+  - id: set_zone_1
+    then:
+      - lvgl.label.update:
+          id: home_zone_1_icon
+          text_color: white
+      - lvgl.widget.update:
+          id: menu_zone_1_button
+          text_color: white
+      - lvgl.widget.update:
+          id: menu_zone_1_icon_label
+          text_color: white
+      - lvgl.label.update:
+          id: weather_zone_1_icon
+          text_color: white
+
+  - id: unset_zone_1
+    then:
+      - lvgl.label.update:
+          id: home_zone_1_icon
+          text_color: graydark
+      - lvgl.widget.update:
+          id: menu_zone_1_button
+          text_color: graydark
+      - lvgl.widget.update:
+          id: menu_zone_1_icon_label
+          text_color: graydark
+      - lvgl.label.update:
+          id: weather_zone_1_icon
+          text_color: graydark
+
+  - id: set_zone_2
+    then:
+      - lvgl.label.update:
+          id: home_zone_2_icon
+          text_color: white
+      - lvgl.widget.update:
+          id: menu_zone_2_button
+          text_color: white
+      - lvgl.widget.update:
+          id: menu_zone_2_icon_label
+          text_color: white
+      - lvgl.label.update:
+          id: weather_zone_2_icon
+          text_color: white
+
+  - id: unset_zone_2
+    then:
+      - lvgl.label.update:
+          id: home_zone_2_icon
+          text_color: graydark
+      - lvgl.widget.update:
+          id: menu_zone_2_button
+          text_color: graydark
+      - lvgl.widget.update:
+          id: menu_zone_2_icon_label
+          text_color: graydark
+      - lvgl.label.update:
+          id: weather_zone_2_icon
+          text_color: graydark
+
+  # SOLAR UI LOGIC
+  - id: update_menu_solar_label
+    then:
+      - lvgl.label.update:
+          id: menu_solar_label
+          text:
+            format: "\U000F1903 %.1f kW \U000F1A73 %.1f kW"
+            args: [ 'id(solar_consumption).state', 'id(solar_generation).state' ]
+
