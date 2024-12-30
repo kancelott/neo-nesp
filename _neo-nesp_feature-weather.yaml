@@ -194,6 +194,12 @@ text_sensor:
       - substitute:
         - ". -> "
 
+button:
+  - platform: template
+    name: Show weather screen
+    on_press:
+      - script.execute: goto_weather_page
+
 font:
   - id: !extend roboto_reg
     extras:
@@ -286,11 +292,11 @@ lvgl:
             y: -25
             text: "\U000F0599 00°C now"
 
-    - id: weather_page
+    - id: !extend weather_page
       on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"weather_page"'
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "weather_page"
       widgets:
         # XXX disabled: to enable, comment out bg_opa
         # XXX may need to also change text labels to black/white

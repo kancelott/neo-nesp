@@ -27,8 +27,8 @@ substitutions:
   weather_text: sensor.bom_melbourne_short_text_0
   weather_now_temp: sensor.bom_melbourne_now_temp_now
   weather_now_label: sensor.bom_melbourne_now_now_label
-  weather_later_label: sensor.bom_melbourne_now_later_label
   weather_later_temp: sensor.bom_melbourne_now_temp_later
+  weather_later_label: sensor.bom_melbourne_now_later_label
   weather_feels_like: sensor.bom_melbourne_temp_feels_like
   weather_rain: sensor.bom_melbourne_rain_amount_range_0
   weather_rain_chance: sensor.bom_melbourne_rain_chance_0
@@ -42,6 +42,13 @@ substitutions:
   # Optional feature: HA alarm entities
   alarm_entity: alarm_control_panel.alarmo
   alarm_perimeter_entity: sensor.perimeter_trigger
+
+  # Optional feature: HA train entities
+  gtfs2_entity: sensor.watergardens_city
+  ptv_departure_0: sensor.sunbury_line_to_footscray_station_from_watergardens_station_0
+  ptv_departure_1: sensor.sunbury_line_to_footscray_station_from_watergardens_station_1
+  ptv_departure_delta_0: sensor.time_until_sunbury_line_to_footscray_station_from_watergardens_station_0
+  ptv_departure_delta_1: sensor.time_until_sunbury_line_to_footscray_station_from_watergardens_station_1
 
   # esphome naming
   friendly_name: 'NESP'

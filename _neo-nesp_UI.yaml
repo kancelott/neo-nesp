@@ -83,8 +83,8 @@ sensor:
             # set temp++ when on home page and not OFF or FAN
             lambda: |-
               return (strcmp(id(active_lvgl_page).c_str(), "hvac_page") == 0
-                && strcmp(id(hvac_mode).state.c_str(), "off") != 0
-                && strcmp(id(hvac_mode).state.c_str(), "fan_only") != 0
+                && id(hvac_mode).state == "off"
+                && id(hvac_mode).state == "fan_only"
                 );
           then:
             - homeassistant.action:
@@ -98,8 +98,8 @@ sensor:
             # set temp-- when on home page and not OFF or FAN
             lambda: |-
               return (strcmp(id(active_lvgl_page).c_str(), "hvac_page") == 0 
-                && strcmp(id(hvac_mode).state.c_str(), "off") != 0
-                && strcmp(id(hvac_mode).state.c_str(), "fan_only") != 0
+                && id(hvac_mode).state == "off"
+                && id(hvac_mode).state == "fan_only"
                 );
           then:
             - homeassistant.action:
@@ -206,6 +206,12 @@ text_sensor:
           } else if (x.compare("boost") == 0) {
             id(set_preset_boost).execute();
           }
+
+  ### current LVGL screen
+  - platform: template
+    name: Current screen
+    id: current_screen
+    icon: mdi:dock-window
 
 switch:
   ### DISPLAY ANTI BURN-IN
@@ -333,9 +339,9 @@ lvgl:
     ### GUI - THERMOSTAT HOME PAGE
     - id: hvac_page
       on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"hvac_page"'
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "hvac_page"
       widgets:
         - arc:
             id: arc_bg
@@ -488,9 +494,9 @@ lvgl:
     ### GUI - MAIN MENU
     - id: menu_page
       on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"menu_page"'
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "menu_page"
         - script.execute: update_menu_date_label
         - lvgl.widget.enable:
             - menu_arm_button
@@ -733,9 +739,9 @@ lvgl:
     ### GUI - HVAC MODE SUBMENU
     - id: mode_page
       on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"mode_page"'
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "mode_page"
         - lvgl.widget.enable:
             - mode_back_button
             - mode_off_button
@@ -800,7 +806,9 @@ lvgl:
             on_focus:
               - if:
                   condition:
-                    lambda: 'return strcmp(id(hvac_mode).state.c_str(), "off") == 0;'
+                    text_sensor.state:
+                      id: hvac_mode
+                      state: "off"
                   then:
                     lvgl.label.update:
                       id: selected_mode_label
@@ -949,9 +957,9 @@ lvgl:
     ### GUI - PRESET SUBMENU
     - id: preset_page
       on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"preset_page"'
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "preset_page"
         - lvgl.widget.enable:
             - preset_back_button
             - preset_eco_button
@@ -1014,7 +1022,9 @@ lvgl:
             on_press:
               - if:
                   condition:
-                    lambda: 'return strcmp(id(preset_mode).state.c_str(), "eco") == 0;'
+                    text_sensor.state:
+                      id: preset_mode
+                      state: "eco"
                   then:
                     - homeassistant.action:
                         action: climate.set_preset_mode
@@ -1050,7 +1060,9 @@ lvgl:
             on_press:
               - if:
                   condition:
-                    lambda: 'return strcmp(id(preset_mode).state.c_str(), "comfort") == 0;'
+                    text_sensor.state:
+                      id: preset_mode
+                      state: 'comfort'
                   then:
                     - homeassistant.action:
                         action: climate.set_preset_mode
@@ -1086,7 +1098,9 @@ lvgl:
             on_press:
               - if:
                   condition:
-                    lambda: 'return strcmp(id(preset_mode).state.c_str(), "boost") == 0;'
+                    text_sensor.state:
+                      id: preset_mode
+                      state: "boost"
                   then:
                     - homeassistant.action:
                         action: climate.set_preset_mode
@@ -1104,9 +1118,9 @@ lvgl:
     ### GUI - FAN SPEED SUBMENU
     - id: fan_page
       on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"fan_page"'
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "fan_page"
         - lvgl.widget.enable:
             - fan_back_button
             - fan_auto_button
@@ -1253,6 +1267,11 @@ lvgl:
                     entity_id: ${climate_entity}
                     fan_mode: "low"
               - script.execute: goto_home_page
+
+    ### GUI - FEATURE PLACEHOLDER PAGES
+    - id: weather_page
+    - id: alarm_page
+    - id: train_page
 
 script:
   # HVAC UI LOGIC
@@ -1635,7 +1654,7 @@ script:
         else:
           if:
             condition:
-              lambda: 'return id(feature_weather_enabled) == 1 && strcmp(id(hvac_mode).state.c_str(), "off") == 0;'
+              lambda: 'return id(feature_weather_enabled) == 1 && id(hvac_mode).state == "off";'
             then:
               script.execute: goto_weather_page
             else:
@@ -1670,6 +1689,16 @@ script:
           id: fan_page
           animation: FADE_IN
           time: 500ms
+  - id: set_lvgl_page
+    parameters:
+      page_name: string
+    then:
+      - globals.set:
+          id: active_lvgl_page
+          value: !lambda return page_name.c_str();
+      - text_sensor.template.publish:
+          id: current_screen
+          state: !lambda return id(active_lvgl_page).c_str();
 
   # MISC - FEATURE PLACEHOLDER SCRIPTS
   - id: goto_weather_page               # defined in _neo-nesp_feature-weather

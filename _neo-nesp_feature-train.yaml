@@ -21,6 +21,176 @@ time:
           # also need to update goto_home_page if changing this schedule
           - script.execute: goto_home_page
 
+sensor:
+  ### HASS train - platform number
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: platform_number
+    id: platform_number_0
+    internal: true
+    on_value:
+      - lvgl.label.update:
+          id: platform_label_0
+          text:
+            format: "%.0f"
+            args: [ 'x' ]
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: platform_number
+    id: platform_number_1
+    internal: true
+    on_value:
+      - lvgl.label.update:
+          id: platform_label_1
+          text:
+            format: "%.0f"
+            args: [ 'x' ]
+
+  ### HASS train - delay min
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: delay_min
+    id: delay_0
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: delay_min
+    id: delay_1
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_1
+
+text_sensor:
+  ### HASS train - delta time
+  - platform: homeassistant
+    entity_id: ${ptv_departure_delta_0}
+    id: departure_delta_0
+    internal: true
+    filters:
+      - substitute:
+        - " minutes -> "
+        - " minute -> "
+    on_value:
+      - script.execute: update_departure_delta
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_delta_1}
+    id: departure_delta_1
+    internal: true
+    filters:
+      - substitute:
+        - " minutes -> "
+        - " minute -> "
+    on_value:
+      - script.execute: update_departure_delta
+      - script.execute: update_departure_label_1
+
+  ### HASS train - scheduled time
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: scheduled_departure_utc
+    id: scheduled_time_0
+    internal: true
+    on_value:
+      - script.execute: update_departure_delta
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: scheduled_departure_utc
+    id: scheduled_time_1
+    internal: true
+    on_value:
+      - script.execute: update_departure_delta
+      - script.execute: update_departure_label_1
+
+  ### HASS train - destination
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: destination
+    id: destination_0
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: destination
+    id: destination_1
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_1
+
+  ### HASS train - train type
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: train_type
+    id: train_type_0
+    internal: true
+    filters:
+      - substitute:
+        - "3 Car  -> "
+        - "6 Car  -> "
+        - "7 Car  -> "
+    on_value:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: train_type
+    id: train_type_1
+    internal: true
+    filters:
+      - substitute:
+        - "3 Car -> "
+        - "6 Car -> "
+        - "7 Car -> "
+    on_value:
+      - script.execute: update_departure_label_1
+
+  ### TODO HASS train - line colour
+  - platform: homeassistant
+    entity_id: ${gtfs2_entity}
+    attribute: route_route_color
+    id: line_colour
+    internal: true
+    filters:
+      - prepend: "0x"
+
+  ### TODO HASS train - disruption
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: disruption_descs
+    id: disruptions_0
+    internal: true
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: disruption_descs
+    id: disruptions_1
+    internal: true
+
+binary_sensor:
+  ### HASS train - destination city loop?
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: is_city_loop
+    id: destination_city_loop_0
+    internal: true
+    on_state:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: is_city_loop
+    id: destination_city_loop_1
+    internal: true
+    on_state:
+      - script.execute: update_departure_label_1
+
+button:
+  - platform: template
+    name: Show train screen
+    on_press:
+      - script.execute: goto_train_page
+
 font:
   - id: !extend roboto_med
     extras:
@@ -49,13 +219,6 @@ font:
     size: 48
     bpp: 4
 
-color:
-  - id: sunbury_line
-    red: 0.000
-    green: 0.639
-    blue: 1.000
-    white: 0.000
-
 lvgl:
   pages:
     - id: !extend menu_page
@@ -63,11 +226,11 @@ lvgl:
         - lvgl.widget.show:
             - menu_train_button
 
-    - id: train_page
+    - id: !extend train_page
       on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"train_page"'
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "train_page"
       widgets:
         - label:
             id: next_train_label
@@ -76,16 +239,16 @@ lvgl:
             text_font: network_reg
             text: "Next train"
         - label:
-            id: next_train_min_label
+            id: next_train_minute_label
             align: CENTER
             y: -145
             text_font: network_bold_med
-            text: "  0 min  "
+            text: "  -1 min  "
             text_color: black
             bg_color: white
             bg_opa: COVER
         - obj:
-            id: platform_bg_1
+            id: platform_bg_0
             width: 40
             height: 40
             align: LEFT_MID
@@ -97,13 +260,13 @@ lvgl:
             scrollbar_mode: "OFF"
             widgets:
               - label:
-                  id: platform_label_1
+                  id: platform_label_0
                   align: CENTER
                   text_font: network_bold_reg
-                  text: "1"
+                  text: "0"
                   text_color: black
         - obj:
-            id: platform_bg_2
+            id: platform_bg_1
             width: 40
             height: 40
             align: LEFT_MID
@@ -115,13 +278,25 @@ lvgl:
             scrollbar_mode: "OFF"
             widgets:
               - label:
-                  id: platform_label_2
+                  id: platform_label_1
                   align: CENTER
                   text_font: network_bold_reg
-                  text: "2"
+                  text: "0"
                   text_color: black
         - obj:
-            id: line_colour_1
+            id: line_colour_bg_0
+            width: 12
+            height: 80
+            align: TOP_RIGHT
+            align_to:
+              id: platform_bg_0
+              align: OUT_RIGHT_TOP
+              x: 10
+            border_width: 0
+            radius: 0
+            bg_color: 0x00a3ff    # sunbury blue
+        - obj:
+            id: line_colour_bg_1
             width: 12
             height: 80
             align: TOP_RIGHT
@@ -131,40 +306,38 @@ lvgl:
               x: 10
             border_width: 0
             radius: 0
-            bg_color: sunbury_line
-        - obj:
-            id: line_colour_2
-            width: 12
-            height: 80
+            bg_color: 0x00a3ff    # sunbury blue
+        - label:
+            id: departure_label_0
             align: TOP_RIGHT
             align_to:
-              id: platform_bg_2
+              id: line_colour_bg_0
               align: OUT_RIGHT_TOP
               x: 10
-            border_width: 0
-            radius: 0
-            bg_color: sunbury_line
+              y: -9
+            text_font: network_bold_med
+            text: "0:00 Destination"
+            text_align: LEFT
         - label:
             id: departure_label_1
             align: TOP_RIGHT
             align_to:
-              id: line_colour_1
+              id: line_colour_bg_1
               align: OUT_RIGHT_TOP
               x: 10
               y: -9
             text_font: network_bold_med
-            text: "12:00 City Loop"
+            text: "0:00 Destination"
             text_align: LEFT
         - label:
-            id: departure_label_2
-            align: TOP_RIGHT
+            id: departure_detailed_label_0
+            align: TOP_LEFT
             align_to:
-              id: line_colour_2
-              align: OUT_RIGHT_TOP
-              x: 10
-              y: -9
-            text_font: network_bold_med
-            text: "13:00 Flinders St."
+              id: departure_label_0
+              align: OUT_BOTTOM_LEFT
+              y: 3
+            text_font: network_reg
+            text: "Delayed 5 min – HCMT"
             text_align: LEFT
         - label:
             id: departure_detailed_label_1
@@ -174,17 +347,7 @@ lvgl:
               align: OUT_BOTTOM_LEFT
               y: 3
             text_font: network_reg
-            text: "5 min delay - HCMT"
-            text_align: LEFT
-        - label:
-            id: departure_detailed_label_2
-            align: TOP_LEFT
-            align_to:
-              id: departure_label_2
-              align: OUT_BOTTOM_LEFT
-              y: 3
-            text_font: network_reg
-            text: "Comeng"
+            text: "Good service – Comeng"
             text_align: LEFT
 
 script:
@@ -200,4 +363,77 @@ script:
       - script.execute: goto_train_page
 
   # TRAIN UI LOGIC
-
+  - id: update_departure_delta
+    then:
+      - lvgl.label.update:
+          id: next_train_minute_label
+          text: !lambda |-
+            static char buf[32];
+            if (id(departure_delta_0).state == "0"
+                || id(departure_delta_0).state == "1"
+                || id(departure_delta_0).state == "2" ) {
+              snprintf(buf, sizeof(buf), "  %s min  ", id(departure_delta_1).state.c_str());
+            } else {
+              snprintf(buf, sizeof(buf), "  %s min  ", id(departure_delta_0).state.c_str());
+            }
+            return buf;
+  - id: update_departure_label_0
+    then:
+      - lvgl.label.update:
+          id: departure_label_0
+          text: !lambda |-
+            static char buf[32];
+            if (id(destination_city_loop_0).state) {
+              snprintf(buf, sizeof(buf), "%s %s", id(scheduled_time_0).state.substr(11,16).c_str(), id(destination_0).state.c_str());
+            } else {
+              snprintf(buf, sizeof(buf), "%s City Loop", id(scheduled_time_0).state.substr(11,16).c_str());
+            }
+            return buf;
+      - lvgl.label.update:
+          id: departure_detailed_label_0
+          text: !lambda |-
+            static char buf[64];
+            if (id(delay_0).state == 0 || id(delay_0).state == 1) {
+              if (id(train_type_0).state != "") {
+                snprintf(buf, sizeof(buf), "Good service –%s", id(train_type_0).state.c_str());
+              } else {
+                snprintf(buf, sizeof(buf), "Good service");
+              }
+            } else {
+              if (id(train_type_0).state == "") {
+                snprintf(buf, sizeof(buf), "Delayed %.0f min –%s", id(delay_0).state, id(train_type_0).state.c_str());
+              } else {
+                snprintf(buf, sizeof(buf), "Delayed %.0f min", id(delay_0).state);
+              }
+            }
+            return buf;
+  - id: update_departure_label_1
+    then:
+      - lvgl.label.update:
+          id: departure_label_1
+          text: !lambda |-
+            static char buf[32];
+            if (id(destination_city_loop_0).state) {
+              snprintf(buf, sizeof(buf), "%s %s", id(scheduled_time_1).state.substr(11,16).c_str(), id(destination_1).state.c_str());
+            } else {
+              snprintf(buf, sizeof(buf), "%s City Loop", id(scheduled_time_1).state.substr(11,16).c_str());
+            }
+            return buf;
+      - lvgl.label.update:
+          id: departure_detailed_label_1
+          text: !lambda |-
+            static char buf[64];
+            if (id(delay_1).state == 0 || id(delay_1).state == 1) {
+              if (id(train_type_1).state != "") {
+                snprintf(buf, sizeof(buf), "Good service – %s", id(train_type_1).state.c_str());
+              } else {
+                snprintf(buf, sizeof(buf), "Good service");
+              }
+            } else {
+              if (id(train_type_1).state != "") {
+                snprintf(buf, sizeof(buf), "Delayed %.0f min – %s", id(delay_1).state, id(train_type_1).state.c_str());
+              } else {
+                snprintf(buf, sizeof(buf), "Delayed %.0f min", id(delay_1).state);
+              }
+            }
+            return buf;

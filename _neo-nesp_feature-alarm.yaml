@@ -42,11 +42,29 @@ text_sensor:
             lambda: 'return x.compare("") == 0;'
           then:
             - lvgl.label.update:
-                id: perimeter_label
+                id: perimeter_hvac_label
+                text: " "
+            - lvgl.label.update:
+                id: perimeter_weather_label
+                text: " "
+            - lvgl.label.update:
+                id: perimeter_train_label
                 text: " "
           else:
             - lvgl.label.update:
-                id: perimeter_label
+                id: perimeter_hvac_label
+                text: !lambda |-
+                  static char buf[40];
+                  snprintf(buf, sizeof(buf), "  \U000F081C %s  ", x.c_str());
+                  return buf;
+            - lvgl.label.update:
+                id: perimeter_weather_label
+                text: !lambda |-
+                  static char buf[40];
+                  snprintf(buf, sizeof(buf), "  \U000F081C %s  ", x.c_str());
+                  return buf;
+            - lvgl.label.update:
+                id: perimeter_train_label
                 text: !lambda |-
                   static char buf[40];
                   snprintf(buf, sizeof(buf), "  \U000F081C %s  ", x.c_str());
@@ -134,7 +152,27 @@ lvgl:
     - id: !extend hvac_page
       widgets:
         - label:
-            id: perimeter_label
+            id: perimeter_hvac_label
+            align: CENTER
+            y: 205
+            text_align: CENTER
+            text_color: red
+            text: " "
+
+    - id: !extend weather_page
+      widgets:
+        - label:
+            id: perimeter_weather_label
+            align: CENTER
+            y: 205
+            text_align: CENTER
+            text_color: red
+            text: " "
+
+    - id: !extend train_page
+      widgets:
+        - label:
+            id: perimeter_train_label
             align: CENTER
             y: 205
             text_align: CENTER
@@ -147,11 +185,11 @@ lvgl:
             - menu_arm_button
 
     ### GUI - ALARM KEYPAD
-    - id: alarm_page
+    - id: !extend alarm_page
       on_load:
-        - globals.set:
-            id: active_lvgl_page
-            value: '"alarm_page"'
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "alarm_page"
         - lvgl.widget.enable:
             - alarm_keypad
         - lvgl.widget.focus:
