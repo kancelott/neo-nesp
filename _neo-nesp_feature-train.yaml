@@ -22,6 +22,20 @@ time:
           - script.execute: goto_home_page
 
 sensor:
+  ### HASS train - delta time
+  - platform: homeassistant
+    entity_id: ${ptv_departure_delta_0}
+    id: departure_delta_0
+    internal: true
+    on_value:
+      - script.execute: update_departure_delta
+  - platform: homeassistant
+    entity_id: ${ptv_departure_delta_1}
+    id: departure_delta_1
+    internal: true
+    on_value:
+      - script.execute: update_departure_delta
+
   ### HASS train - platform number
   - platform: homeassistant
     entity_id: ${ptv_departure_0}
@@ -63,46 +77,21 @@ sensor:
       - script.execute: update_departure_label_1
 
 text_sensor:
-  ### HASS train - delta time
-  - platform: homeassistant
-    entity_id: ${ptv_departure_delta_0}
-    id: departure_delta_0
-    internal: true
-    filters:
-      - substitute:
-        - " minutes -> "
-        - " minute -> "
-    on_value:
-      - script.execute: update_departure_delta
-      - script.execute: update_departure_label_0
-  - platform: homeassistant
-    entity_id: ${ptv_departure_delta_1}
-    id: departure_delta_1
-    internal: true
-    filters:
-      - substitute:
-        - " minutes -> "
-        - " minute -> "
-    on_value:
-      - script.execute: update_departure_delta
-      - script.execute: update_departure_label_1
-
   ### HASS train - scheduled time
   - platform: homeassistant
     entity_id: ${ptv_departure_0}
-    attribute: scheduled_departure_utc
+    attribute: scheduled
     id: scheduled_time_0
     internal: true
+    # XXX calulcate time delta between this and now()
     on_value:
-      - script.execute: update_departure_delta
       - script.execute: update_departure_label_0
   - platform: homeassistant
     entity_id: ${ptv_departure_1}
-    attribute: scheduled_departure_utc
+    attribute: scheduled
     id: scheduled_time_1
     internal: true
     on_value:
-      - script.execute: update_departure_delta
       - script.execute: update_departure_label_1
 
   ### HASS train - destination
@@ -111,6 +100,9 @@ text_sensor:
     attribute: destination
     id: destination_0
     internal: true
+    filters:
+      - substitute:
+        - "Flinders Street -> Flinders St"
     on_value:
       - script.execute: update_departure_label_0
   - platform: homeassistant
@@ -118,6 +110,9 @@ text_sensor:
     attribute: destination
     id: destination_1
     internal: true
+    filters:
+      - substitute:
+        - "Flinders Street -> Flinders St"
     on_value:
       - script.execute: update_departure_label_1
 
@@ -141,13 +136,13 @@ text_sensor:
     internal: true
     filters:
       - substitute:
-        - "3 Car -> "
-        - "6 Car -> "
-        - "7 Car -> "
+        - "3 Car  -> "
+        - "6 Car  -> "
+        - "7 Car  -> "
     on_value:
       - script.execute: update_departure_label_1
 
-  ### TODO HASS train - line colour
+  ### TODO (unused) HASS train - line colour
   - platform: homeassistant
     entity_id: ${gtfs2_entity}
     attribute: route_route_color
@@ -156,7 +151,7 @@ text_sensor:
     filters:
       - prepend: "0x"
 
-  ### TODO HASS train - disruption
+  ### TODO (unused) HASS train - disruption
   - platform: homeassistant
     entity_id: ${ptv_departure_0}
     attribute: disruption_descs
@@ -187,7 +182,7 @@ binary_sensor:
 
 button:
   - platform: template
-    name: Show train screen
+    name: Show Train screen
     on_press:
       - script.execute: goto_train_page
 
@@ -243,7 +238,7 @@ lvgl:
             align: CENTER
             y: -145
             text_font: network_bold_med
-            text: "  -1 min  "
+            text: "  X min  "
             text_color: black
             bg_color: white
             bg_opa: COVER
@@ -368,13 +363,11 @@ script:
       - lvgl.label.update:
           id: next_train_minute_label
           text: !lambda |-
-            static char buf[32];
-            if (id(departure_delta_0).state == "0"
-                || id(departure_delta_0).state == "1"
-                || id(departure_delta_0).state == "2" ) {
-              snprintf(buf, sizeof(buf), "  %s min  ", id(departure_delta_1).state.c_str());
+            static char buf[16];
+            if (id(departure_delta_0).state < 3) {
+              snprintf(buf, sizeof(buf), "  %.0f min  ", id(departure_delta_1).state);
             } else {
-              snprintf(buf, sizeof(buf), "  %s min  ", id(departure_delta_0).state.c_str());
+              snprintf(buf, sizeof(buf), "  %.0f min  ", id(departure_delta_0).state);
             }
             return buf;
   - id: update_departure_label_0
@@ -384,9 +377,9 @@ script:
           text: !lambda |-
             static char buf[32];
             if (id(destination_city_loop_0).state) {
-              snprintf(buf, sizeof(buf), "%s %s", id(scheduled_time_0).state.substr(11,16).c_str(), id(destination_0).state.c_str());
+              snprintf(buf, sizeof(buf), "%s %s", id(scheduled_time_0).state.c_str(), id(destination_0).state.c_str());
             } else {
-              snprintf(buf, sizeof(buf), "%s City Loop", id(scheduled_time_0).state.substr(11,16).c_str());
+              snprintf(buf, sizeof(buf), "%s City Loop", id(scheduled_time_0).state.c_str());
             }
             return buf;
       - lvgl.label.update:
@@ -395,13 +388,13 @@ script:
             static char buf[64];
             if (id(delay_0).state == 0 || id(delay_0).state == 1) {
               if (id(train_type_0).state != "") {
-                snprintf(buf, sizeof(buf), "Good service –%s", id(train_type_0).state.c_str());
+                snprintf(buf, sizeof(buf), "Good service – %s", id(train_type_0).state.c_str());
               } else {
                 snprintf(buf, sizeof(buf), "Good service");
               }
             } else {
               if (id(train_type_0).state == "") {
-                snprintf(buf, sizeof(buf), "Delayed %.0f min –%s", id(delay_0).state, id(train_type_0).state.c_str());
+                snprintf(buf, sizeof(buf), "Delayed %.0f min – %s", id(delay_0).state, id(train_type_0).state.c_str());
               } else {
                 snprintf(buf, sizeof(buf), "Delayed %.0f min", id(delay_0).state);
               }
@@ -413,10 +406,10 @@ script:
           id: departure_label_1
           text: !lambda |-
             static char buf[32];
-            if (id(destination_city_loop_0).state) {
-              snprintf(buf, sizeof(buf), "%s %s", id(scheduled_time_1).state.substr(11,16).c_str(), id(destination_1).state.c_str());
+            if (id(destination_city_loop_1).state) {
+              snprintf(buf, sizeof(buf), "%s %s", id(scheduled_time_1).state.c_str(), id(destination_1).state.c_str());
             } else {
-              snprintf(buf, sizeof(buf), "%s City Loop", id(scheduled_time_1).state.substr(11,16).c_str());
+              snprintf(buf, sizeof(buf), "%s City Loop", id(scheduled_time_1).state.c_str());
             }
             return buf;
       - lvgl.label.update:

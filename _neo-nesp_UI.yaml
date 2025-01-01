@@ -67,6 +67,11 @@ binary_sensor:
             then:
               - script.execute: goto_menu_page
 
+  - platform: template
+    name: Show Home screen
+    on_press:
+      - script.execute: goto_home_page
+
 sensor:
   ### ROTARY ENCODER ACTIONS
   - id: !extend rotary
@@ -83,8 +88,8 @@ sensor:
             # set temp++ when on home page and not OFF or FAN
             lambda: |-
               return (strcmp(id(active_lvgl_page).c_str(), "hvac_page") == 0
-                && id(hvac_mode).state == "off"
-                && id(hvac_mode).state == "fan_only"
+                && id(hvac_mode).state != "off"
+                && id(hvac_mode).state != "fan_only"
                 );
           then:
             - homeassistant.action:
@@ -98,8 +103,8 @@ sensor:
             # set temp-- when on home page and not OFF or FAN
             lambda: |-
               return (strcmp(id(active_lvgl_page).c_str(), "hvac_page") == 0 
-                && id(hvac_mode).state == "off"
-                && id(hvac_mode).state == "fan_only"
+                && id(hvac_mode).state != "off"
+                && id(hvac_mode).state != "fan_only"
                 );
           then:
             - homeassistant.action:
@@ -1689,6 +1694,7 @@ script:
           id: fan_page
           animation: FADE_IN
           time: 500ms
+
   - id: set_lvgl_page
     parameters:
       page_name: string

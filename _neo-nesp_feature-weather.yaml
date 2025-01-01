@@ -196,7 +196,7 @@ text_sensor:
 
 button:
   - platform: template
-    name: Show weather screen
+    name: Show Weather screen
     on_press:
       - script.execute: goto_weather_page
 
