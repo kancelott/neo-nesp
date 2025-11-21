@@ -1,29 +1,44 @@
 packages:
   common: !include _common.yaml
-  ui: !include _neo-nesp_UI.yaml
+  ui: !include _UI.yaml
 
+  ################################################################
   # Comment out lines below for unused optional features
-  feature_zones: !include _neo-nesp_feature-zones.yaml
-  feature_weather: !include _neo-nesp_feature-weather.yaml
-  feature_alarm: !include _neo-nesp_feature-alarm.yaml
-  feature_train: !include _neo-nesp_feature-train.yaml
+  ################################################################
+  feature_zones: !include _feature-zones.yaml
+  feature_solar: !include _feature-solar.yaml
+  feature_weather: !include _feature-weather.yaml
+  feature_alarm: !include _feature-alarm.yaml
+  feature_train: !include _feature-train.yaml
 
 substitutions:
+  ################################################################
   # Required: HA climate entity you want to control
+  ################################################################
   climate_entity: climate.climate_control
 
-  # Optional feature: HA cover & temp entities for zoning support (2 supported)
+  ################################################################
+  # Optional zones feature: HA cover & temp entities for zoning (2 supported)
+  ################################################################
   zone_1_entity: cover.zone_1_downstairs
   zone_2_entity: cover.zone_2_upstairs
   zone_1_temp_entity: sensor.xiaomi_temp_1_temperature
   zone_2_temp_entity: sensor.xiaomi_temp_2_temperature
   zone_1_humidity_entity: sensor.xiaomi_temp_1_humidity
   zone_2_humidity_entity: sensor.xiaomi_temp_2_humidity
+
+  ################################################################
+  # Optional solar feature: HA electricity generation/consumption entities
+  ################################################################
   solar_generation_entity: sensor.power_solar_generation
   solar_consumption_entity: sensor.power_consumption
+  solar_net_entity: sensor.power_net_generation
 
-  # Optional feature: HA weather entities
+  ################################################################
+  # Optional weather feature: HA weather entities
+  ################################################################
   weather_entity: weather.bom_melbourne
+  weather_icon: weather.bom_melbourne
   weather_text: sensor.bom_melbourne_short_text_0
   weather_now_temp: sensor.bom_melbourne_now_temp_now
   weather_now_label: sensor.bom_melbourne_now_now_label
@@ -39,11 +54,15 @@ substitutions:
   weather_tomorrow_temp_low: sensor.bom_melbourne_temp_min_1
   weather_tomorrow_temp_high: sensor.bom_melbourne_temp_max_1
 
-  # Optional feature: HA alarm entities
+  ################################################################
+  # Optional alarm feature: HA alarm entities
+  ################################################################
   alarm_entity: alarm_control_panel.alarmo
   alarm_perimeter_entity: sensor.perimeter_trigger
 
-  # Optional feature: HA train entities
+  ################################################################
+  # Optional train feature: HA train timetable entities
+  ################################################################
   gtfs2_entity: sensor.watergardens_city
   ptv_departure_0: sensor.sunbury_line_to_footscray_station_from_watergardens_station_0
   ptv_departure_1: sensor.sunbury_line_to_footscray_station_from_watergardens_station_1
@@ -75,10 +94,7 @@ esp32:
   flash_size: 16MB
   framework:
     type: esp-idf
-    version: 5.3.1
-    platform_version: 6.8.1
     sdkconfig_options:
-      CONFIG_ESPTOOLPY_FLASHSIZE_16MB: y
       CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: y
       CONFIG_ESP32S3_DATA_CACHE_64KB: y
       CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
@@ -113,7 +129,6 @@ light:
     id: rgb_ring
     pin: 4
     num_leds: 13
-    rmt_channel: 0
     rgb_order: GRB
     chipset: WS2812
     effects:
@@ -289,96 +304,100 @@ spi:
     allow_other_uses: true
 
 display:
-  - platform: st7701s
-    id: screen
-    spi_mode: MODE0
-    data_rate: 10MHz
-    color_order: RGB
-    auto_clear_enabled: false
-    update_interval: never
-    dimensions:
-      width: 480
-      height: 480
-    cs_pin: 21
-    de_pin: 39
-    vsync_pin: 48
-    hsync_pin: 40
-    pclk_pin:
-      number: 45
-      ignore_strapping_warning: true
-    pclk_frequency: 15MHz
-    pclk_inverted: false
-    hsync_pulse_width: 10
-    hsync_back_porch:  10
-    hsync_front_porch: 10
-    vsync_pulse_width:  2
-    vsync_back_porch:  12
-    vsync_front_porch: 14
-    data_pins:
-      blue:
-        - number: 47                # LCD_D0  = b0
-          allow_other_uses: true
-        - number: 41                # LCD_D1  = b1
-          allow_other_uses: true
-        - 0                         # LCD_D2  = b2
-        - 42                        # LCD_D3  = b3
-        - 14                        # LCD_D4  = b4
-      green:
-        - 8                         # LCD_D5  = g0
-        - 13                        # LCD_D6  = g1
-        - 18                        # LCD_D7  = g2
-        - 12                        # LCD_D8  = g3
-        - 11                        # LCD_D9  = g4
-        - 17                        # LCD_D10 = g5
-      red:
-        - 10                        # LCD_D11 = r0
-        - 16                        # LCD_D12 = r1
-        - 9                         # LCD_D13 = r2
-        - 15                        # LCD_D14 = r3
-        - 46                        # LCD_D15 = r4
-    init_sequence:
-      # Reference: wireless-tag sample code: 
-      # https://github.com/wireless-tag-com/ZX2D10GE01R-V4848/blob/master/main/screen.c
-      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x13]    # CMD2_BKSEL (command bank select BK3, BK func enabled)
-      - [0xEF, 0x08]
-      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x10]    # CMD2_BKSEL (command bank select BK0, BK func disabled)
-      - [0xC0, 0x3B, 0x00]                      # Scan line
-      - [0xC1, 0x0B, 0x02]                      # VBP
-      - [0xC2, 0x07, 0x02]
-      - [0xCC, 0x10]
-      - [0xCD, 0x08]                            # RGB format | ?565??? 666??
-      - [0xB0, 0x00, 0x11, 0x16, 0x0e, 0x11, 0x06, 0x05, 0x09, 0x08, 0x21, 0x06, 0x13, 0x10, 0x29, 0x31, 0x18]   # IPS | 255 | 251 | 247 down | 239 | 231 | 203 | 175 | 147 | 108 | 80 | 52 | 24 | 16 | 8 down | 4 | 0
-      - [0xB1, 0x00, 0x11, 0x16, 0x0e, 0x11, 0x07, 0x05, 0x09, 0x09, 0x21, 0x05, 0x13, 0x11, 0x2a, 0x31, 0x18]   # IPS | 255 | 251 | 247 down | 239 | 231 | 203 | 175 | 147 | 108 | 80 | 52 | 24 | 16 | 8 down | 4 | 0
-      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x11]
-      - [0xB0, 0x6d]                            # VOP  3.5375+ *x 0.0125 | 5D
-      - [0xB1, 0x37]                            # VCOM amplitude setting
-      - [0xB2, 0x81]                            # VGH Voltage setting | 12V
-      - [0xB3, 0x80]
-      - [0xB5, 0x43]                            # VGL Voltage setting | -8.3V
-      - [0xB7, 0x85]
-      - [0xB8, 0x20]
-      - [0xC1, 0x78]
-      - [0xC2, 0x78]
-      - [0xD0, 0x88]
-      - [0xE0, 0x00, 0x00, 0x02]
-      - [0xE1, 0x03, 0xA0, 0x00, 0x00, 0x04, 0xA0, 0x00, 0x00, 0x00, 0x20, 0x20]
-      - [0xE2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-      - [0xE3, 0x00, 0x00, 0x11, 0x00]
-      - [0xE4, 0x22, 0x00]
-      - [0xE5, 0x05, 0xEC, 0xA0, 0xA0, 0x07, 0xEE, 0xA0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-      - [0xE6, 0x00, 0x00, 0x11, 0x00]
-      - [0xE7, 0x22, 0x00]
-      - [0xE8, 0x06, 0xED, 0xA0, 0xA0, 0x08, 0xEF, 0xA0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-      - [0xEB, 0x00, 0x00, 0x40, 0x40, 0x00, 0x00, 0x00]
-      - [0xED, 0xFF, 0xFF, 0xFF, 0xBA, 0x0A, 0xBF, 0x45, 0xFF, 0xFF, 0x54, 0xFB, 0xA0, 0xAB, 0xFF, 0xFF, 0xFF]
-      - [0xEF, 0x10, 0x0D, 0x04, 0x08, 0x3F, 0x1F]
-      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x13]    # CMD2_BKSEL (command bank select BK3, BK func enabled)
-      - [0xEF, 0x08]
-      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x00]    # CMD2_BKSEL (command bank select BK0, BK func disabled)
-      - [0x36, 0x00]                            # MADCTL_CMD (already in esphome ST7701S::write_init_sequence_)
-      - [0x3A, 0x66]                            # COLMOD 55/50=16bit(RGB565); 66=18bit(RGB666); 77?????3AH?=24bit(RGB888)
-      #- [0x11]                                  # SLEEP_OUT (already in esphome)
-      #- delay 120ms
-      #- [0x29]                                  # DISPLAY_ON (already in esphome)
-      #- delay 20ms
+  - platform: mipi_rgb
+    model: zx2d10ge01r-v4848
+
+  ### DEPRECATED:
+  #- platform: st7701s
+  #  id: screen
+  #  spi_mode: MODE0
+  #  data_rate: 10MHz
+  #  color_order: RGB
+  #  auto_clear_enabled: false
+  #  update_interval: never
+  #  dimensions:
+  #    width: 480
+  #    height: 480
+  #  cs_pin: 21
+  #  de_pin: 39
+  #  vsync_pin: 48
+  #  hsync_pin: 40
+  #  pclk_pin:
+  #    number: 45
+  #    ignore_strapping_warning: true
+  #  pclk_frequency: 15MHz
+  #  pclk_inverted: false
+  #  hsync_pulse_width: 10
+  #  hsync_back_porch:  10
+  #  hsync_front_porch: 10
+  #  vsync_pulse_width:  2
+  #  vsync_back_porch:  12
+  #  vsync_front_porch: 14
+  #  data_pins:
+  #    blue:
+  #      - number: 47                # LCD_D0  = b0
+  #        allow_other_uses: true
+  #      - number: 41                # LCD_D1  = b1
+  #        allow_other_uses: true
+  #      - 0                         # LCD_D2  = b2
+  #      - 42                        # LCD_D3  = b3
+  #      - 14                        # LCD_D4  = b4
+  #    green:
+  #      - 8                         # LCD_D5  = g0
+  #      - 13                        # LCD_D6  = g1
+  #      - 18                        # LCD_D7  = g2
+  #      - 12                        # LCD_D8  = g3
+  #      - 11                        # LCD_D9  = g4
+  #      - 17                        # LCD_D10 = g5
+  #    red:
+  #      - 10                        # LCD_D11 = r0
+  #      - 16                        # LCD_D12 = r1
+  #      - 9                         # LCD_D13 = r2
+  #      - 15                        # LCD_D14 = r3
+  #      - 46                        # LCD_D15 = r4
+  #  init_sequence:
+  #    # Reference: wireless-tag sample code: 
+  #    # https://github.com/wireless-tag-com/ZX2D10GE01R-V4848/blob/master/main/screen.c
+  #    - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x13]    # CMD2_BKSEL (command bank select BK3, BK func enabled)
+  #    - [0xEF, 0x08]
+  #    - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x10]    # CMD2_BKSEL (command bank select BK0, BK func disabled)
+  #    - [0xC0, 0x3B, 0x00]                      # Scan line
+  #    - [0xC1, 0x0B, 0x02]                      # VBP
+  #    - [0xC2, 0x07, 0x02]
+  #    - [0xCC, 0x10]
+  #    - [0xCD, 0x08]                            # RGB format | ?565??? 666??
+  #    - [0xB0, 0x00, 0x11, 0x16, 0x0e, 0x11, 0x06, 0x05, 0x09, 0x08, 0x21, 0x06, 0x13, 0x10, 0x29, 0x31, 0x18]   # IPS | 255 | 251 | 247 down | 239 | 231 | 203 | 175 | 147 | 108 | 80 | 52 | 24 | 16 | 8 down | 4 | 0
+  #    - [0xB1, 0x00, 0x11, 0x16, 0x0e, 0x11, 0x07, 0x05, 0x09, 0x09, 0x21, 0x05, 0x13, 0x11, 0x2a, 0x31, 0x18]   # IPS | 255 | 251 | 247 down | 239 | 231 | 203 | 175 | 147 | 108 | 80 | 52 | 24 | 16 | 8 down | 4 | 0
+  #    - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x11]
+  #    - [0xB0, 0x6d]                            # VOP  3.5375+ *x 0.0125 | 5D
+  #    - [0xB1, 0x37]                            # VCOM amplitude setting
+  #    - [0xB2, 0x81]                            # VGH Voltage setting | 12V
+  #    - [0xB3, 0x80]
+  #    - [0xB5, 0x43]                            # VGL Voltage setting | -8.3V
+  #    - [0xB7, 0x85]
+  #    - [0xB8, 0x20]
+  #    - [0xC1, 0x78]
+  #    - [0xC2, 0x78]
+  #    - [0xD0, 0x88]
+  #    - [0xE0, 0x00, 0x00, 0x02]
+  #    - [0xE1, 0x03, 0xA0, 0x00, 0x00, 0x04, 0xA0, 0x00, 0x00, 0x00, 0x20, 0x20]
+  #    - [0xE2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+  #    - [0xE3, 0x00, 0x00, 0x11, 0x00]
+  #    - [0xE4, 0x22, 0x00]
+  #    - [0xE5, 0x05, 0xEC, 0xA0, 0xA0, 0x07, 0xEE, 0xA0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+  #    - [0xE6, 0x00, 0x00, 0x11, 0x00]
+  #    - [0xE7, 0x22, 0x00]
+  #    - [0xE8, 0x06, 0xED, 0xA0, 0xA0, 0x08, 0xEF, 0xA0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+  #    - [0xEB, 0x00, 0x00, 0x40, 0x40, 0x00, 0x00, 0x00]
+  #    - [0xED, 0xFF, 0xFF, 0xFF, 0xBA, 0x0A, 0xBF, 0x45, 0xFF, 0xFF, 0x54, 0xFB, 0xA0, 0xAB, 0xFF, 0xFF, 0xFF]
+  #    - [0xEF, 0x10, 0x0D, 0x04, 0x08, 0x3F, 0x1F]
+  #    - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x13]    # CMD2_BKSEL (command bank select BK3, BK func enabled)
+  #    - [0xEF, 0x08]
+  #    - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x00]    # CMD2_BKSEL (command bank select BK0, BK func disabled)
+  #    - [0x36, 0x00]                            # MADCTL_CMD (already in esphome ST7701S::write_init_sequence_)
+  #    - [0x3A, 0x66]                            # COLMOD 55/50=16bit(RGB565); 66=18bit(RGB666); 77?????3AH?=24bit(RGB888)
+  #    #- [0x11]                                  # SLEEP_OUT (already in esphome)
+  #    #- delay 120ms
+  #    #- [0x29]                                  # DISPLAY_ON (already in esphome)
+  #    #- delay 20ms
 
