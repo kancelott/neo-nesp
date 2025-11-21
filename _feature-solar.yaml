@@ -1,0 +1,189 @@
+#
+# neo-nesp optional feature: solar generation/electricity consumption readout
+#
+
+esphome:
+  name: !extend ${hostname}
+  on_boot:
+    - globals.set:
+        id: feature_solar_enabled
+        value: '1'
+
+sensor:
+  ### HASS - SOLAR GENERATION
+  - platform: homeassistant
+    entity_id: ${solar_generation_entity}
+    id: solar_generation
+    internal: true
+    filters:
+      - round: 1
+    on_value:
+      - script.execute: update_solar_gen_arc
+      - script.execute: update_menu_solar_label
+
+  ### HASS - SOLAR CONSUMPTION
+  - platform: homeassistant
+    entity_id: ${solar_consumption_entity}
+    id: solar_consumption
+    internal: true
+    filters:
+      - round: 1
+    on_value:
+      - script.execute: update_solar_consum_arc
+      - script.execute: update_menu_solar_label
+
+  ### HASS - SOLAR NET
+  - platform: homeassistant
+    entity_id: ${solar_net_entity}
+    id: solar_net
+    internal: true
+    filters:
+      - round: 1
+    on_value:
+      - script.execute: update_solar_net_label
+
+font:
+  - id: !extend roboto_reg
+    extras:
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F1903", # mdi:home-lightning-bolt
+          "\U000F1A73", # mdi:solar-power-variant
+          "\U000F0A72", # mdi:solar-power
+          ]
+
+lvgl:
+  pages:
+    - id: !extend menu_page
+      widgets:
+        - label:
+            id: menu_solar_label
+            align: LEFT_MID
+            x: 15
+            y: 55
+            text_align: LEFT
+            text: "\U000F1903 0.0 kW \U000F1A73 0.0 kW"
+
+    - id: !extend hvac_page
+      widgets:
+        - arc:
+            id: solar_gen_hvac_arc
+            height: 468
+            width: 468
+            align: CENTER
+            start_angle: 90
+            end_angle: 120
+            min_value: 0
+            max_value: 50
+            arc_color: graydark
+            arc_width: 8
+            arc_rounded: false
+            indicator:
+              arc_color: color_solar_generation
+              arc_width: 8
+              arc_rounded: false
+        - arc:
+            id: solar_consum_hvac_arc
+            height: 468
+            width: 468
+            align: CENTER
+            start_angle: 60
+            end_angle: 90
+            mode: REVERSE
+            min_value: 0
+            max_value: 50
+            arc_color: graydark
+            arc_width: 8
+            arc_rounded: false
+            indicator:
+              arc_color: color_solar_consumption
+              arc_width: 8
+              arc_rounded: false
+        - label:
+            id: solar_net_hvac_label
+            align: BOTTOM_MID
+            y: -25
+            text_color: gray
+            text: "\U000F0A72 0.0 kW"
+
+    - id: !extend weather_page
+      widgets:
+        - arc:
+            id: solar_gen_weather_arc
+            height: 468
+            width: 468
+            align: CENTER
+            start_angle: 90
+            end_angle: 120
+            min_value: 0
+            max_value: 50
+            arc_color: graydark
+            arc_width: 8
+            arc_rounded: false
+            indicator:
+              arc_color: color_solar_generation
+              arc_width: 8
+              arc_rounded: false
+        - arc:
+            id: solar_consum_weather_arc
+            height: 468
+            width: 468
+            align: CENTER
+            start_angle: 60
+            end_angle: 90
+            mode: REVERSE
+            min_value: 0
+            max_value: 50
+            arc_color: graydark
+            arc_width: 8
+            arc_rounded: false
+            indicator:
+              arc_color: color_solar_consumption
+              arc_width: 8
+              arc_rounded: false
+        - label:
+            id: solar_net_weather_label
+            align: BOTTOM_MID
+            y: -25
+            text_color: gray
+            text: "\U000F0A72 0.0 kW"
+
+script:
+  - id: update_menu_solar_label
+    then:
+      - lvgl.label.update:
+          id: menu_solar_label
+          text:
+            format: "\U000F1903 %.1f kW \U000F1A73 %.1f kW"
+            args: [ 'id(solar_consumption).state', 'id(solar_generation).state' ]
+
+  - id: update_solar_net_label
+    then:
+      - lvgl.label.update:
+          id: solar_net_hvac_label
+          text:
+            format: "\U000F0A72 %+.1f kW"
+            args: [ 'id(solar_net).state' ]
+      - lvgl.label.update:
+          id: solar_net_weather_label
+          text:
+            format: "\U000F0A72 %+.1f kW"
+            args: [ 'id(solar_net).state' ]
+
+  - id: update_solar_gen_arc
+    then:
+      - lvgl.arc.update:
+          id: solar_gen_hvac_arc
+          value: !lambda return id(solar_generation).state * 10;
+      - lvgl.arc.update:
+          id: solar_gen_weather_arc
+          value: !lambda return id(solar_generation).state * 10;
+
+  - id: update_solar_consum_arc
+    then:
+      - lvgl.arc.update:
+          id: solar_consum_hvac_arc
+          value: !lambda return id(solar_consumption).state * 10;
+      - lvgl.arc.update:
+          id: solar_consum_weather_arc
+          value: !lambda return id(solar_consumption).state * 10;

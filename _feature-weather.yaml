@@ -1,0 +1,656 @@
+#
+# neo-nesp optional feature: weather
+#
+
+esphome:
+  name: !extend ${hostname}
+  on_boot:
+    - globals.set:
+        id: feature_weather_enabled
+        value: '1'
+
+time:
+  - id: !extend hass_time
+    on_time_sync:
+      then:
+        - script.execute: set_weather_bg
+    on_time:
+      - hours: 0
+        minutes: 0
+        seconds: 0
+        days_of_month: 1
+        months: 3,6,9,12
+        then:
+          - script.execute: set_weather_bg
+      - hours: 17
+        minutes: 0
+        seconds: 0
+        then:
+          - script.execute: update_weather_aux_label
+
+sensor:
+  ### HASS BoM - temperature
+  - platform: homeassistant
+    entity_id: ${weather_entity}
+    attribute: temperature
+    id: bom_temp
+    internal: true
+    filters:
+      - round: 0
+    on_value:
+      - lvgl.label.update:
+          id: weather_temp_label
+          text:
+            format: "%.0f°C"
+            args: [ 'x' ]
+      - script.execute: update_menu_weather_label
+
+  ### HASS BoM - now temp
+  - platform: homeassistant
+    entity_id: ${weather_now_temp}
+    id: bom_now_temp
+    internal: true
+    filters:
+      - round: 0
+    on_value:
+      - script.execute: update_weather_now_later_label
+
+  ### HASS BoM - later temp
+  - platform: homeassistant
+    entity_id: ${weather_later_temp}
+    id: bom_later_temp
+    internal: true
+    filters:
+      - round: 0
+    on_value:
+      - script.execute: update_weather_now_later_label
+
+  ### HASS BoM - feels like temperature
+  - platform: homeassistant
+    entity_id: ${weather_feels_like}
+    id: bom_feels_like
+    internal: true
+    filters:
+      - round: 0
+    on_value:
+      - lvgl.label.update:
+          id: weather_feels_like_label
+          text:
+            format: "Feels like %.0f°C"
+            args: [ 'x' ]
+
+  ### HASS BoM - forecast tomorrow low
+  - platform: homeassistant
+    entity_id: ${weather_tomorrow_temp_low}
+    id: bom_tmr_temp_low
+    internal: true
+    filters:
+      - round: 0
+    on_value:
+      - script.execute: update_weather_aux_label
+
+  ### HASS BoM - forecast tomorrow high
+  - platform: homeassistant
+    entity_id: ${weather_tomorrow_temp_high}
+    id: bom_tmr_temp_high
+    internal: true
+    filters:
+      - round: 0
+    on_value:
+      - script.execute: update_weather_aux_label
+
+  ### HASS BoM - rain chance
+  - platform: homeassistant
+    entity_id: ${weather_rain_chance}
+    id: bom_rain_chance
+    internal: true
+    on_value:
+      - script.execute: update_weather_aux_label
+
+text_sensor:
+  ### HASS BoM - weather icon
+  - platform: homeassistant
+    entity_id: ${weather_icon}
+    attribute: icon
+    id: bom_icon
+    internal: true
+    on_value:
+      - script.execute: update_weather_icon_label
+      - script.execute: update_menu_weather_label
+
+  ### HASS BoM - weather text
+  - platform: homeassistant
+    entity_id: ${weather_text}
+    id: bom_text
+    internal: true
+    filters:
+      - to_lower:
+      - substitute:
+        - ". -> "
+
+  ### HASS BoM - now temp label
+  - platform: homeassistant
+    entity_id: ${weather_now_label}
+    id: bom_now_label
+    internal: true
+    on_value:
+      - script.execute: update_weather_now_later_label
+
+  ### HASS BoM - later temp label
+  - platform: homeassistant
+    entity_id: ${weather_later_label}
+    id: bom_later_label
+    internal: true
+    on_value:
+      - script.execute: update_weather_now_later_label
+
+  ### HASS BoM - rain
+  - platform: homeassistant
+    entity_id: ${weather_rain}
+    id: bom_rain
+    internal: true
+    on_value:
+      - script.execute: update_weather_aux_label
+
+  ### HASS BoM - UV forecast
+  - platform: homeassistant
+    entity_id: ${weather_uv}
+    id: bom_uv
+    internal: true
+    filters:
+      - to_lower:
+      - substitute:
+        - "unknown -> n/a"
+    on_value:
+      - script.execute: update_weather_aux_label
+
+  ### HASS BoM - pollen
+  - platform: homeassistant
+    entity_id: ${weather_pollen}
+    id: bom_pollen
+    internal: true
+    filters:
+      - to_lower:
+      - substitute:
+        - "unknown -> n/a"
+    on_value:
+      - script.execute: update_weather_aux_label
+
+  ### HASS BoM - weather tomorrow icon
+  - platform: homeassistant
+    entity_id: ${weather_tomorrow_icon}
+    id: bom_tmr_icon
+    internal: true
+    on_value:
+      - script.execute: update_weather_aux_label
+
+  ### HASS BoM - weather tomorrow text
+  - platform: homeassistant
+    entity_id: ${weather_tomorrow_text}
+    id: bom_tmr_text
+    internal: true
+    filters:
+      - to_lower:
+      - substitute:
+        - ". -> "
+
+button:
+  - platform: template
+    name: Show Weather screen
+    on_press:
+      - script.execute: goto_weather_page
+
+font:
+  - id: !extend roboto_reg
+    extras:
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F050F", # mdi:thermometer
+          "\U000F0E03", # mdi:thermometer-chevron-up
+          "\U000F0E02", # mdi:thermometer-chevron-down
+          "\U000F1885", # mdi:flower-pollen
+          "\U000F0594", # mdi:weather-night (clear)
+          "\U000F0590", # mdi:weather-cloudy (cloudy)
+          "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
+          "\U000F0F30", # mdi:weather-hazy (dust, dusty, haze, hazy)
+          "\U000F0591", # mdi:weather-fog (fog)
+          "\U000F12CB", # mdi:snowflake-melt (frost)
+          "\U000F0596", # mdi:weather-pouring (heavy_shower, heavy_showers, rain)
+          "\U000F0F33", # mdi:weather-partly-rainy (light_rain)
+                        # mdi:weather-light-showers (light_shower, light_showers)
+          "\U000F0599", # mdi:weather-sunny (mostly_sunny, sunny)
+          "\U000F0595", # mdi:weather-partly-cloudy (partly_cloudy)
+          "\U000F0597", # mdi:weather-rainy (shower, showers)
+          "\U000F0598", # mdi:weather-snowy (snow)
+          "\U000F0593", # mdi:weather-lightning
+          "\U000F067E", # mdi:weather-lightning-rainy (storm, storms)
+          "\U000F059D", # mdi:weather-windy (wind, windy)
+          "\U000F0592", # mdi:weather-hail
+          ]
+  - id: !extend roboto_med
+    extras:
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F050F", # mdi:thermometer
+          "\U000F0E03", # mdi:thermometer-chevron-up
+          "\U000F0E02", # mdi:thermometer-chevron-down
+          "\U000F1885", # mdi:flower-pollen
+          "\U000F0594", # mdi:weather-night (clear)
+          "\U000F0590", # mdi:weather-cloudy (cloudy)
+          "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
+          "\U000F0F30", # mdi:weather-hazy (dust, dusty, haze, hazy)
+          "\U000F0591", # mdi:weather-fog (fog)
+          "\U000F12CB", # mdi:snowflake-melt (frost)
+          "\U000F0596", # mdi:weather-pouring (heavy_shower, heavy_showers, rain)
+          "\U000F0F33", # mdi:weather-partly-rainy (light_rain)
+                        # mdi:weather-light-showers (light_shower, light_showers)
+          "\U000F0599", # mdi:weather-sunny (mostly_sunny, sunny)
+          "\U000F0595", # mdi:weather-partly-cloudy (partly_cloudy)
+          "\U000F0597", # mdi:weather-rainy (shower, showers)
+          "\U000F0598", # mdi:weather-snowy (snow)
+          "\U000F0593", # mdi:weather-lightning
+          "\U000F067E", # mdi:weather-lightning-rainy (storm, storms)
+          "\U000F059D", # mdi:weather-windy (wind, windy)
+          "\U000F0592", # mdi:weather-hail
+          ]
+  - id: !extend roboto_huge
+    extras:
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F050F", # mdi:thermometer
+          "\U000F0594", # mdi:weather-night (clear)
+          "\U000F0590", # mdi:weather-cloudy (cloudy)
+          "\U000F0898", # mdi:weather-hurricane (cyclone, tropical_cyclone)
+          "\U000F0F30", # mdi:weather-hazy (dust, dusty, haze, hazy)
+          "\U000F0591", # mdi:weather-fog (fog)
+          "\U000F12CB", # mdi:snowflake-melt (frost)
+          "\U000F0596", # mdi:weather-pouring (heavy_shower, heavy_showers, rain)
+          "\U000F0F33", # mdi:weather-partly-rainy (light_rain)
+                        # mdi:weather-light-showers (light_shower, light_showers)
+          "\U000F0599", # mdi:weather-sunny (mostly_sunny, sunny)
+          "\U000F0595", # mdi:weather-partly-cloudy (partly_cloudy)
+          "\U000F0597", # mdi:weather-rainy (shower, showers)
+          "\U000F0598", # mdi:weather-snowy (snow)
+          "\U000F0593", # mdi:weather-lightning
+          "\U000F067E", # mdi:weather-lightning-rainy (storm, storms)
+          "\U000F059D", # mdi:weather-windy (wind, windy)
+          "\U000F0592", # mdi:weather-hail
+          ]
+
+lvgl:
+  gradients: !include colors/seasons.yaml
+  pages:
+    - id: !extend menu_page
+      on_load:
+        - lvgl.widget.show:
+            - menu_weather_button
+      widgets:
+        - label:
+            id: menu_weather_label
+            align: LEFT_MID
+            x: 15
+            y: -25
+            text: "\U000F0599 00°C now"
+
+    - id: !extend weather_page
+      on_load:
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "weather_page"
+      widgets:
+        # XXX disabled: to enable, comment out bg_opa
+        # XXX may need to also change text labels to black/white
+        - obj:
+            id: weather_bg
+            width: 480
+            height: 480
+            radius: 240
+            align: CENTER
+            border_width: 0
+            bg_opa: TRANSP
+        - label:
+            id: weather_icon_label
+            align: CENTER
+            y: -130
+            text_font: roboto_huge
+            text: "\U000F0599"
+        - label:
+            id: weather_temp_label
+            align: CENTER
+            y: -30
+            x: -40
+            text_font: roboto_huge
+            text: "00°C"
+        - label:
+            id: weather_feels_like_label
+            align: CENTER
+            y: 50
+            text: "Feels like 00°C"
+        - label:
+            id: weather_now_later_label
+            align: CENTER
+            y: 110
+            text: "\U000F050F 00–00°C"
+        - label:
+            id: weather_aux_label
+            align: CENTER
+            y: 145
+            text: "\U000F0599 00–00°C tmr."
+
+script:
+  - id: !extend goto_weather_page
+    then:
+      - lvgl.page.show:
+          id: weather_page
+          animation: FADE_IN
+          time: 500ms
+
+  - id: !extend feature_menu_goto_weather_page
+    then:
+      - script.execute: goto_weather_page
+
+  # WEATHER UI LOGIC
+  - id: update_weather_icon_label
+    then:
+      - lvgl.label.update:
+          id: weather_icon_label
+          text: !lambda |-
+            static char buf[8];
+            std::string icon;
+            auto x = id(bom_icon).state;
+            if (x.compare("mdi:weather-night") == 0) {
+              icon = "\U000F0594";
+            } else if (x.compare("mdi:weather-cloudy") == 0) {
+              icon = "\U000F0590";
+            } else if (x.compare("mdi:weather-hurricane") == 0) {
+              icon = "\U000F0898";
+            } else if (x.compare("mdi:weather-hazy") == 0) {
+              icon = "\U000F0F30";
+            } else if (x.compare("mdi:weather-fog") == 0) {
+              icon = "\U000F0F91";
+            } else if (x.compare("mdi:snowflake-melt") == 0) {
+              icon = "\U000F12CB";
+            } else if (x.compare("mdi:weather-pouring") == 0) {
+              icon = "\U000F0596";
+            } else if (x.compare("mdi:weather-partly-rainy") == 0) {
+              icon = "\U000F0F33";
+            } else if (x.compare("mdi:weather-light-showers") == 0) {
+              icon = "\U000F0F33";    // mdi:partly-rainy, mdi:light-showers doesn't exist?
+            } else if (x.compare("mdi:weather-sunny") == 0) {
+              icon = "\U000F0599";
+            } else if (x.compare("mdi:weather-partly-cloudy") == 0) {
+              icon = "\U000F0595";
+            } else if (x.compare("mdi:weather-rainy") == 0) {
+              icon = "\U000F0597";
+            } else if (x.compare("mdi:weather-snowy") == 0) {
+              icon = "\U000F0598";
+            } else if (x.compare("mdi:weather-lightning") == 0) {
+              icon = "\U000F0593";    // not in BoM integration code last time I checked
+            } else if (x.compare("mdi:weather-lightning-rainy") == 0) {
+              icon = "\U000F0593";    // override with mdi:lightning
+            } else if (x.compare("mdi:weather-windy") == 0) {
+              icon = "\U000F059D";
+            } else if (x.compare("mdi:weather-hail") == 0) {
+              icon = "\U000F0592";    // not in BoM integration code last time I checked
+            } else {
+              icon = "";
+            }
+            snprintf(buf, sizeof(buf), "%s", icon.c_str());
+            return buf;
+      - lvgl.label.update:
+          id: menu_weather_button_label
+          text: !lambda |-
+            static char buf[8];
+            std::string icon;
+            auto x = id(bom_icon).state;
+            if (x.compare("mdi:weather-night") == 0) {
+              icon = "\U000F0594";
+            } else if (x.compare("mdi:weather-cloudy") == 0) {
+              icon = "\U000F0590";
+            } else if (x.compare("mdi:weather-hurricane") == 0) {
+              icon = "\U000F0898";
+            } else if (x.compare("mdi:weather-hazy") == 0) {
+              icon = "\U000F0F30";
+            } else if (x.compare("mdi:weather-fog") == 0) {
+              icon = "\U000F0F91";
+            } else if (x.compare("mdi:snowflake-melt") == 0) {
+              icon = "\U000F12CB";
+            } else if (x.compare("mdi:weather-pouring") == 0) {
+              icon = "\U000F0596";
+            } else if (x.compare("mdi:weather-partly-rainy") == 0) {
+              icon = "\U000F0F33";
+            } else if (x.compare("mdi:weather-light-showers") == 0) {
+              icon = "\U000F0F33";    // mdi:partly-rainy, mdi:light-showers doesn't exist?
+            } else if (x.compare("mdi:weather-sunny") == 0) {
+              icon = "\U000F0599";
+            } else if (x.compare("mdi:weather-partly-cloudy") == 0) {
+              icon = "\U000F0595";
+            } else if (x.compare("mdi:weather-rainy") == 0) {
+              icon = "\U000F0597";
+            } else if (x.compare("mdi:weather-snowy") == 0) {
+              icon = "\U000F0598";
+            } else if (x.compare("mdi:weather-lightning") == 0) {
+              icon = "\U000F0593";    // not in BoM integration code last time I checked
+            } else if (x.compare("mdi:weather-lightning-rainy") == 0) {
+              icon = "\U000F0593";    // override with mdi:lightning
+            } else if (x.compare("mdi:weather-windy") == 0) {
+              icon = "\U000F059D";
+            } else if (x.compare("mdi:weather-hail") == 0) {
+              icon = "\U000F0592";    // not in BoM integration code last time I checked
+            } else {
+              icon = "";
+            }
+            snprintf(buf, sizeof(buf), "%s", icon.c_str());
+            return buf;
+
+  - id: update_weather_now_later_label
+    then:
+      - lvgl.label.update:
+          id: weather_now_later_label
+          text: !lambda |-
+            static char buf[32];
+            auto now = id(bom_now_temp).state;
+            auto later = id(bom_later_temp).state;
+            auto now_label = id(bom_now_label).state;
+            auto later_label = id(bom_later_label).state;
+            if (now_label.compare("Min") == 0 && later_label.compare("Max") == 0) {
+              snprintf(buf, sizeof(buf), "\U000F050F %.0f–%.0f°C", now, later);
+            } else if (now_label.compare("Max") == 0) {
+              snprintf(buf, sizeof(buf), "\U000F0E03 %.0f°C max.", now);
+            } else if (now_label.compare("Overnight min") == 0) {
+              snprintf(buf, sizeof(buf), "\U000F0594 %.0f°C night", now);
+            }
+            return buf;
+
+  - id: update_weather_aux_label
+    then:
+      - if:
+          condition:
+            lambda: 'return id(hass_time).now().hour >= 17;'
+          then:
+            # display tomorrow's temp after 17:00
+            - script.execute: update_weather_aux_label_tmr_temp
+          else:
+            - if:
+                condition:
+                  or:
+                    - lambda: 'return id(bom_pollen).state.compare("extreme") == 0;'
+                    - lambda: 'return id(bom_pollen).state.compare("high") == 0;'
+                then:
+                  # display pollen if high to extreme
+                  - script.execute: update_weather_aux_label_pollen
+                else:
+                  - if:
+                      condition:
+                        lambda: 'return id(bom_uv).state.compare("extreme") == 0;'
+                      then:
+                        # display UV if extreme
+                        - script.execute: update_weather_aux_label_uv
+                      else:
+                        - if:
+                            condition:
+                              lambda: 'return id(bom_rain_chance).state >= 80;'
+                            then:
+                              # display rain if chance > 80%
+                              - script.execute: update_weather_aux_label_rain
+                            else:
+                              # display UV by default during day
+                              - script.execute: update_weather_aux_label_uv
+
+  - id: update_weather_aux_label_tmr_temp
+    then:
+      - lvgl.label.update:
+          id: weather_aux_label
+          text: !lambda |-
+            static char buf[32];
+            std::string icon;
+            auto low = id(bom_tmr_temp_low).state;
+            auto high = id(bom_tmr_temp_high).state;
+            auto x = id(bom_tmr_icon).state;
+              if (x.compare("mdi:weather-night") == 0) {
+                icon = "\U000F0594";
+              } else if (x.compare("mdi:weather-cloudy") == 0) {
+                icon = "\U000F0590";
+              } else if (x.compare("mdi:weather-hurricane") == 0) {
+                icon = "\U000F0898";
+              } else if (x.compare("mdi:weather-hazy") == 0) {
+                icon = "\U000F0F30";
+              } else if (x.compare("mdi:weather-fog") == 0) {
+                icon = "\U000F0F91";
+              } else if (x.compare("mdi:snowflake-melt") == 0) {
+                icon = "\U000F12CB";
+              } else if (x.compare("mdi:weather-pouring") == 0) {
+                icon = "\U000F0596";
+              } else if (x.compare("mdi:weather-partly-rainy") == 0) {
+                icon = "\U000F0F33";
+              } else if (x.compare("mdi:weather-light-showers") == 0) {
+                icon = "\U000F0F33";    // mdi:partly-rainy, mdi:light-showers doesn't exist?
+              } else if (x.compare("mdi:weather-sunny") == 0) {
+                icon = "\U000F0599";
+              } else if (x.compare("mdi:weather-partly-cloudy") == 0) {
+                icon = "\U000F0595";
+              } else if (x.compare("mdi:weather-rainy") == 0) {
+                icon = "\U000F0597";
+              } else if (x.compare("mdi:weather-snowy") == 0) {
+                icon = "\U000F0598";
+              } else if (x.compare("mdi:weather-lightning") == 0) {
+                icon = "\U000F0593";    // not in BoM integration code last time I checked
+              } else if (x.compare("mdi:weather-lightning-rainy") == 0) {
+                icon = "\U000F0593";    // override with mdi:lightning
+              } else if (x.compare("mdi:weather-windy") == 0) {
+                icon = "\U000F059D";
+              } else if (x.compare("mdi:weather-hail") == 0) {
+                icon = "\U000F0592";    // not in BoM integration code last time I checked
+              } else {
+                icon = "";
+              }
+            snprintf(buf, sizeof(buf), "%s %.0f–%.0f°C tmr.", icon.c_str(), low, high);
+            return buf;
+
+  - id: update_weather_aux_label_pollen
+    then:
+      - lvgl.label.update:
+          id: weather_aux_label
+          text:
+            format: "\U000F1885 pollen %s"
+            args: [ 'id(bom_pollen).state.c_str()' ]
+
+  - id: update_weather_aux_label_uv
+    then:
+      - lvgl.label.update:
+          id: weather_aux_label
+          text:
+            format: "\U000F1A45 UV %s"
+            args: [ 'id(bom_uv).state.c_str()' ]
+
+  - id: update_weather_aux_label_rain
+    then:
+      - lvgl.label.update:
+          id: weather_aux_label
+          text:
+            format: "\U000F0596 %s mm"
+            args: [ 'id(bom_rain).state.c_str()' ]
+
+  - id: update_menu_weather_label
+    then:
+      - lvgl.label.update:
+          id: menu_weather_label
+          text: !lambda |-
+            static char buf[48];
+            std::string icon;
+            auto x = id(bom_icon).state;
+            auto temp = id(bom_temp).state;
+            if (x.compare("mdi:weather-night") == 0) {
+              icon = "\U000F0594";
+            } else if (x.compare("mdi:weather-cloudy") == 0) {
+              icon = "\U000F0590";
+            } else if (x.compare("mdi:weather-hurricane") == 0) {
+              icon = "\U000F0898";
+            } else if (x.compare("mdi:weather-hazy") == 0) {
+              icon = "\U000F0F30";
+            } else if (x.compare("mdi:weather-fog") == 0) {
+              icon = "\U000F0F91";
+            } else if (x.compare("mdi:snowflake-melt") == 0) {
+              icon = "\U000F12CB";
+            } else if (x.compare("mdi:weather-pouring") == 0) {
+              icon = "\U000F0596";
+            } else if (x.compare("mdi:weather-partly-rainy") == 0) {
+              icon = "\U000F0F33";
+            } else if (x.compare("mdi:weather-light-showers") == 0) {
+              icon = "\U000F0F33";    // mdi:partly-rainy, mdi:light-showers doesn't exist?
+            } else if (x.compare("mdi:weather-sunny") == 0) {
+              icon = "\U000F0599";
+            } else if (x.compare("mdi:weather-partly-cloudy") == 0) {
+              icon = "\U000F0595";
+            } else if (x.compare("mdi:weather-rainy") == 0) {
+              icon = "\U000F0597";
+            } else if (x.compare("mdi:weather-snowy") == 0) {
+              icon = "\U000F0598";
+            } else if (x.compare("mdi:weather-lightning") == 0) {
+              icon = "\U000F0593";    // not in BoM integration code last time I checked
+            } else if (x.compare("mdi:weather-lightning-rainy") == 0) {
+              icon = "\U000F0593";    // override with mdi:lightning
+            } else if (x.compare("mdi:weather-windy") == 0) {
+              icon = "\U000F059D";
+            } else if (x.compare("mdi:weather-hail") == 0) {
+              icon = "\U000F0592";    // not in BoM integration code last time I checked
+            } else {
+              icon = "";
+            }
+            snprintf(buf, sizeof(buf), "%s %.0f°C now", icon.c_str(), temp);
+            return buf;
+
+  # WEATHER SEASONAL BACKGROUND
+  - id: set_weather_bg
+    then:
+      - lambda: |-
+          auto now = id(hass_time).now();
+          if (now.month >= 3 && now.month <= 5) {
+            id(set_weather_bg_autumn).execute();
+          } else if (now.month >= 6 && now.month <= 8) {
+            id(set_weather_bg_winter).execute();
+          } else if (now.month >= 9 && now.month <= 11) {
+            id(set_weather_bg_spring).execute();
+          } else if (now.month == 12 || now.month <= 2) {
+            id(set_weather_bg_summer).execute();
+          }
+  - id: set_weather_bg_autumn
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: autumn
+  - id: set_weather_bg_winter
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: winter
+  - id: set_weather_bg_spring
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: spring
+  - id: set_weather_bg_summer
+    then:
+      - lvgl.widget.update:
+          id: weather_bg
+          bg_grad: summer

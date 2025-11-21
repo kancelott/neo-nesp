@@ -1,0 +1,525 @@
+#
+# neo-nesp optional feature: train times
+#
+
+esphome:
+  name: !extend ${hostname}
+  on_boot:
+    - globals.set:
+        id: feature_train_enabled
+        value: '1'
+
+time:
+  - id: !extend hass_time
+    on_time:
+      - hours: 7, 8, 9
+        minutes: 0
+        seconds: 0
+        days_of_week: MON-FRI
+        then:
+          # display train times 7am-9am weekdays
+          # also need to update goto_home_page if changing this schedule
+          - script.execute: goto_home_page
+      - seconds: 0
+        minutes: '*'
+        then:
+          - script.execute: update_time
+
+sensor:
+  ### HASS train - delta time
+  - platform: homeassistant
+    entity_id: ${ptv_departure_delta_0}
+    id: departure_delta_0
+    internal: true
+    on_value:
+      - script.execute: update_departure_delta
+  - platform: homeassistant
+    entity_id: ${ptv_departure_delta_1}
+    id: departure_delta_1
+    internal: true
+    on_value:
+      - script.execute: update_departure_delta
+
+  ### HASS train - platform number
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: platform_number
+    id: platform_number_0
+    internal: true
+    on_value:
+      - lvgl.label.update:
+          id: platform_label_0
+          text:
+            format: "%.0f"
+            args: [ 'x' ]
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: platform_number
+    id: platform_number_1
+    internal: true
+    on_value:
+      - lvgl.label.update:
+          id: platform_label_1
+          text:
+            format: "%.0f"
+            args: [ 'x' ]
+
+  ### HASS train - delay min
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: delay_min
+    id: delay_0
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: delay_min
+    id: delay_1
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_1
+
+text_sensor:
+  ### HASS train - scheduled time
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: scheduled
+    id: scheduled_time_0
+    internal: true
+    # XXX calulcate time delta between this and now()
+    on_value:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: scheduled
+    id: scheduled_time_1
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_1
+
+  ### HASS train - destination
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: destination
+    id: destination_0
+    internal: true
+    filters:
+      - substitute:
+        - "Flinders Street -> Flinders St"
+    on_value:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: destination
+    id: destination_1
+    internal: true
+    filters:
+      - substitute:
+        - "Flinders Street -> Flinders St"
+    on_value:
+      - script.execute: update_departure_label_1
+
+  ### HASS train - train type
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: train_type
+    id: train_type_0
+    internal: true
+    filters:
+      - substitute:
+        - "3 Car  -> "
+        - "6 Car  -> "
+        - "7 Car  -> "
+    on_value:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: train_type
+    id: train_type_1
+    internal: true
+    filters:
+      - substitute:
+        - "3 Car  -> "
+        - "6 Car  -> "
+        - "7 Car  -> "
+        - "Silver Hitachi -> HCMT"
+    on_value:
+      - script.execute: update_departure_label_1
+
+  ### TODO (unused) HASS train - line colour
+  - platform: homeassistant
+    entity_id: ${gtfs2_entity}
+    attribute: route_route_color
+    id: line_colour
+    internal: true
+    filters:
+      - prepend: "0x"
+
+  ### TODO (unused) HASS train - disruption
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: disruption_descs
+    id: disruptions_0
+    internal: true
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: disruption_descs
+    id: disruptions_1
+    internal: true
+
+binary_sensor:
+  ### HASS train - destination city loop?
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: is_city_loop
+    id: destination_city_loop_0
+    internal: true
+    on_state:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: is_city_loop
+    id: destination_city_loop_1
+    internal: true
+    on_state:
+      - script.execute: update_departure_label_1
+
+button:
+  - platform: template
+    name: Show Train screen
+    on_press:
+      - script.execute: goto_train_page
+
+font:
+  - id: !extend roboto_med
+    extras:
+      - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F052C", # mdi:train
+          ]
+  - file: "neo-nesp/fonts/NETWORKSANS-2019-REGULAR.TTF"
+    glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–*•'
+    id: network_reg
+    size: 26
+    bpp: 4
+  - file: "neo-nesp/fonts/NETWORKSANS-2019-REGULAR.TTF"
+    glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–*•'
+    id: network_med
+    size: 44
+    bpp: 4
+  - file: "neo-nesp/fonts/NETWORKSANS-2019-BOLD.TTF"
+    glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–*•'
+    id: network_bold_reg
+    size: 26
+    bpp: 4
+  - file: "neo-nesp/fonts/NETWORKSANS-2019-BOLD.TTF"
+    glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–*•'
+    id: network_bold_med
+    size: 44
+    bpp: 4
+
+lvgl:
+  pages:
+    - id: !extend menu_page
+      on_load:
+        - lvgl.widget.show:
+            - menu_train_button
+
+    - id: !extend train_page
+      on_load:
+        - script.execute:
+            id: set_lvgl_page
+            page_name: "train_page"
+      widgets:
+        - arc:
+            id: disruption_bg
+            hidden: True
+            height: 480
+            width: 480
+            align: CENTER
+            arc_color: color_train_disruption
+            arc_width: 5
+            start_angle: 0
+            end_angle: 360
+        - label:
+            id: disruption_label
+            hidden: True
+            align: BOTTOM_MID
+            y: -80
+            text_font: network_reg
+            text_color: color_train_disruption
+            text: "Disruptions"
+        - obj:
+            id: time_bg
+            width: 103
+            height: 43
+            align: TOP_MID
+            y: 20
+            border_width: 3
+            radius: 25
+            bg_color: black
+            border_color: white
+            scrollbar_mode: "OFF"
+            widgets:
+              - label:
+                  id: time_label
+                  align: CENTER
+                  text_font: network_bold_reg
+                  text: "00:00"
+                  text_color: white
+        - label:
+            id: next_train_minute_label
+            align: TOP_MID
+            y: 78
+            text_font: network_bold_med
+            text: "  X min  "
+            text_color: black
+            bg_color: white
+            bg_opa: COVER
+        - obj:
+            id: line_colour_bg_0
+            align: LEFT_MID
+            width: 12
+            height: 80
+            x: 33
+            y: -50
+            border_width: 0
+            radius: 0
+            #bg_color: 0x00a3ff    # sunbury blue
+            bg_color: 0xfebe00    # sunbury yellow
+        - label:
+            id: departure_time_label_0
+            align: TOP_LEFT
+            align_to:
+              id: line_colour_bg_0
+              align: OUT_RIGHT_TOP
+              x: 10
+              y: 112
+            text_font: network_med
+            text: "0:00"
+            text_align: LEFT
+        - label:
+            id: departure_destination_label_0
+            width: 232
+            align: TOP_LEFT
+            align_to:
+              id: departure_time_label_0
+              align: OUT_RIGHT_TOP
+              x: 22
+            text_font: network_bold_med
+            text: "Destination"
+            text_align: LEFT
+            long_mode: SCROLL_CIRCULAR
+        - label:
+            id: departure_detailed_label_0
+            align: TOP_LEFT
+            align_to:
+              id: departure_time_label_0
+              align: OUT_BOTTOM_LEFT
+              y: 3
+            text_font: network_reg
+            text: "On time – HCMT"
+            text_align: LEFT
+        - obj:
+            id: platform_bg_0
+            width: 40
+            height: 35
+            align: TOP_LEFT
+            align_to:
+              id: line_colour_bg_0
+              align: OUT_RIGHT_TOP
+              x: 372
+              y: 122
+            border_width: 0
+            radius: 0
+            #bg_color: 0x00a3ff    # sunbury blue
+            bg_color: 0xfebe00    # sunbury yellow
+            scrollbar_mode: "OFF"
+            widgets:
+              - label:
+                  id: platform_label_0
+                  align: CENTER
+                  text_font: network_bold_reg
+                  text: "0"
+                  text_color: black
+        - obj:
+            id: line_colour_bg_1
+            align: LEFT_MID
+            width: 12
+            height: 80
+            x: 31
+            y: 58
+            border_width: 0
+            radius: 0
+            #bg_color: 0x00a3ff    # sunbury blue
+            bg_color: 0xfebe00    # sunbury yellow
+        - label:
+            id: departure_time_label_1
+            align_to:
+              id: line_colour_bg_1
+              align: OUT_RIGHT_TOP
+              x: 10
+              y: 112
+            text_font: network_med
+            text: "0:00"
+            text_align: LEFT
+            long_mode: SCROLL_CIRCULAR
+        - label:
+            id: departure_destination_label_1
+            width: 232
+            align: TOP_LEFT
+            align_to:
+              id: departure_time_label_1
+              align: OUT_RIGHT_TOP
+              x: 22
+            text_font: network_bold_med
+            text: "Destination"
+            text_align: LEFT
+            long_mode: SCROLL_CIRCULAR
+        - label:
+            id: departure_detailed_label_1
+            align: TOP_LEFT
+            align_to:
+              id: departure_time_label_1
+              align: OUT_BOTTOM_LEFT
+              y: 3
+            text_font: network_reg
+            text: "Delay 5m - Comeng"
+            text_align: LEFT
+        - obj:
+            id: platform_bg_1
+            width: 40
+            height: 35
+            align: TOP_LEFT
+            align_to:
+              id: line_colour_bg_1
+              align: OUT_RIGHT_TOP
+              x: 372
+              y: 122
+            border_width: 0
+            radius: 0
+            #bg_color: 0x00a3ff    # sunbury blue
+            bg_color: 0xfebe00    # sunbury yellow
+            scrollbar_mode: "OFF"
+            widgets:
+              - label:
+                  id: platform_label_1
+                  align: CENTER
+                  text_font: network_bold_reg
+                  text: "0"
+                  text_color: black
+
+script:
+  - id: !extend goto_train_page
+    then:
+      - lvgl.page.show:
+          id: train_page
+          animation: FADE_IN
+          time: 500ms
+
+  - id: !extend feature_menu_goto_train_page
+    then:
+      - script.execute: goto_train_page
+
+  - id: update_time
+    then:
+      - lvgl.label.update:
+          id: time_label
+          text: !lambda |-
+            char buf[8];
+            id(hass_time).now().strftime(buf, sizeof(buf), "%H:%M");
+            return buf;
+
+  # TRAIN UI LOGIC
+  - id: update_departure_delta
+    then:
+      - lvgl.label.update:
+          id: next_train_minute_label
+          text: !lambda |-
+            static char buf[16];
+            int TRAVEL_TIME_MINUTES = 5;
+            //if (id(departure_delta_0).state <= 1) {
+            //  snprintf(buf, sizeof(buf), "  NOW  ");
+            //} else {
+            //  snprintf(buf, sizeof(buf), "  %.0f min  ", id(departure_delta_0).state);
+            //}
+            if (id(departure_delta_0).state >= TRAVEL_TIME_MINUTES) {
+              snprintf(buf, sizeof(buf), "  %.0f min  ", id(departure_delta_0).state);
+            } else {
+              snprintf(buf, sizeof(buf), "  %.0f min  ", id(departure_delta_1).state);
+            }
+            return buf;
+  - id: update_departure_label_0
+    then:
+      - lvgl.label.update:
+          id: departure_time_label_0
+          text: !lambda |-
+            static char buf[8];
+            snprintf(buf, sizeof(buf), "%s", id(scheduled_time_0).state.c_str());
+            return buf;
+      - lvgl.label.update:
+          id: departure_destination_label_0
+          text: !lambda |-
+            static char buf[32];
+            if (id(destination_city_loop_0).state) {
+              snprintf(buf, sizeof(buf), "%s", id(destination_0).state.c_str());
+            } else {
+              snprintf(buf, sizeof(buf), "City Loop");
+            }
+            return buf;
+      - lvgl.label.update:
+          id: departure_detailed_label_0
+          text: !lambda |-
+            static char buf[64];
+            if (id(delay_0).state < 2) {
+              if (id(train_type_0).state != "") {
+                snprintf(buf, sizeof(buf), "On time -%s", id(train_type_0).state.c_str());
+              } else {
+                snprintf(buf, sizeof(buf), "On time");
+              }
+            } else {
+              if (id(train_type_0).state == "") {
+                snprintf(buf, sizeof(buf), "Delay %.0fm –%s", id(delay_0).state, id(train_type_0).state.c_str());
+              } else {
+                snprintf(buf, sizeof(buf), "Delay %.0fm", id(delay_0).state);
+              }
+            }
+            return buf;
+  - id: update_departure_label_1
+    then:
+      - lvgl.label.update:
+          id: departure_time_label_1
+          text: !lambda |-
+            static char buf[8];
+            snprintf(buf, sizeof(buf), "%s", id(scheduled_time_1).state.c_str());
+            return buf;
+      - lvgl.label.update:
+          id: departure_destination_label_1
+          text: !lambda |-
+            static char buf[32];
+            if (id(destination_city_loop_0).state) {
+              snprintf(buf, sizeof(buf), "%s", id(destination_1).state.c_str());
+            } else {
+              snprintf(buf, sizeof(buf), "City Loop");
+            }
+            return buf;
+      - lvgl.label.update:
+          id: departure_detailed_label_1
+          text: !lambda |-
+            static char buf[64];
+            if (id(delay_1).state < 2) {
+              if (id(train_type_1).state != "") {
+                snprintf(buf, sizeof(buf), "On time –%s", id(train_type_1).state.c_str());
+              } else {
+                snprintf(buf, sizeof(buf), "On time");
+              }
+            } else {
+              if (id(train_type_1).state != "") {
+                snprintf(buf, sizeof(buf), "Delay %.0fm –%s", id(delay_1).state, id(train_type_1).state.c_str());
+              } else {
+                snprintf(buf, sizeof(buf), "Delay %.0fm", id(delay_1).state);
+              }
+            }
+            return buf;
+
