@@ -166,7 +166,11 @@ sensor:
           id: current_temp_arc
           value: !lambda return x * 10;
       - script.execute: update_diff_temp_arc
-      - script.execute: update_current_temp_label
+      - lvgl.label.update:
+          id: current_temp_label
+          text:
+            format: "%.1f°C"
+            args: [ 'x' ]
 
   ### HASS - HVAC CURRENT HUMIDITY
   - platform: homeassistant
@@ -1514,13 +1518,6 @@ script:
             return id(set_temperature).state < id(current_temperature).state ? id(set_temperature).state * 10 : id(current_temperature).state * 10;
           end_value: !lambda |-
             return id(set_temperature).state < id(current_temperature).state ? id(current_temperature).state * 10 : id(set_temperature).state * 10;
-  - id: update_current_temp_label
-    then:
-      - lvgl.label.update:
-          id: current_temp_label
-          text:
-            format: "%.1f°C"
-            args: [ 'id(current_temperature).state' ]
 
   - id: show_big_fan_widget
     then:

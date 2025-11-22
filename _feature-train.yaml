@@ -147,26 +147,53 @@ text_sensor:
     on_value:
       - script.execute: update_departure_label_1
 
-  ### TODO (unused) HASS train - line colour
   - platform: homeassistant
     entity_id: ${gtfs2_entity}
     attribute: route_route_color
-    id: line_colour
+    id: line_color
     internal: true
-    filters:
-      - prepend: "0x"
+    on_value:
+      - lvgl.widget.update:
+          id: line_color_bg_0
+          bg_color: !lambda |-
+            lv_color_t color = lv_color_hex(strtoul(x.c_str(), NULL, 16));
+            return color;
+      - lvgl.widget.update:
+          id: line_color_bg_1
+          bg_color: !lambda |-
+            lv_color_t color = lv_color_hex(strtoul(x.c_str(), NULL, 16));
+            return color;
+      - lvgl.widget.update:
+          id: platform_bg_0
+          bg_color: !lambda |-
+            lv_color_t color = lv_color_hex(strtoul(x.c_str(), NULL, 16));
+            return color;
+      - lvgl.widget.update:
+          id: platform_bg_1
+          bg_color: !lambda |-
+            lv_color_t color = lv_color_hex(strtoul(x.c_str(), NULL, 16));
+            return color;
 
-  ### TODO (unused) HASS train - disruption
   - platform: homeassistant
     entity_id: ${ptv_departure_0}
     attribute: disruption_descs
     id: disruptions_0
     internal: true
-  - platform: homeassistant
-    entity_id: ${ptv_departure_1}
-    attribute: disruption_descs
-    id: disruptions_1
-    internal: true
+    on_value:
+      - if:
+          condition:
+            lambda: 'return x.compare("") == 0;'
+          then:
+            - lvgl.widget.hide:
+              - disruption_bg
+              - disruption_label
+          else:
+            - lvgl.widget.show:
+              - disruption_bg
+              - disruption_label
+            - lvgl.label.update:
+                id: disruption_label
+                text: !lambda 'return x.c_str();'
 
 binary_sensor:
   ### HASS train - destination city loop?
@@ -278,7 +305,7 @@ lvgl:
             bg_color: white
             bg_opa: COVER
         - obj:
-            id: line_colour_bg_0
+            id: line_color_bg_0
             align: LEFT_MID
             width: 12
             height: 80
@@ -286,13 +313,12 @@ lvgl:
             y: -50
             border_width: 0
             radius: 0
-            #bg_color: 0x00a3ff    # sunbury blue
-            bg_color: 0xfebe00    # sunbury yellow
+            bg_color: 0xffbe00    # sunbury yellow
         - label:
             id: departure_time_label_0
             align: TOP_LEFT
             align_to:
-              id: line_colour_bg_0
+              id: line_color_bg_0
               align: OUT_RIGHT_TOP
               x: 10
               y: 112
@@ -301,12 +327,12 @@ lvgl:
             text_align: LEFT
         - label:
             id: departure_destination_label_0
-            width: 232
+            width: 227
             align: TOP_LEFT
             align_to:
               id: departure_time_label_0
               align: OUT_RIGHT_TOP
-              x: 22
+              x: 27
             text_font: network_bold_med
             text: "Destination"
             text_align: LEFT
@@ -327,14 +353,13 @@ lvgl:
             height: 35
             align: TOP_LEFT
             align_to:
-              id: line_colour_bg_0
+              id: line_color_bg_0
               align: OUT_RIGHT_TOP
               x: 372
               y: 122
             border_width: 0
             radius: 0
-            #bg_color: 0x00a3ff    # sunbury blue
-            bg_color: 0xfebe00    # sunbury yellow
+            bg_color: 0xffbe00    # sunbury yellow
             scrollbar_mode: "OFF"
             widgets:
               - label:
@@ -344,7 +369,7 @@ lvgl:
                   text: "0"
                   text_color: black
         - obj:
-            id: line_colour_bg_1
+            id: line_color_bg_1
             align: LEFT_MID
             width: 12
             height: 80
@@ -352,12 +377,11 @@ lvgl:
             y: 58
             border_width: 0
             radius: 0
-            #bg_color: 0x00a3ff    # sunbury blue
-            bg_color: 0xfebe00    # sunbury yellow
+            bg_color: 0x00a3ff    # sunbury blue
         - label:
             id: departure_time_label_1
             align_to:
-              id: line_colour_bg_1
+              id: line_color_bg_1
               align: OUT_RIGHT_TOP
               x: 10
               y: 112
@@ -367,12 +391,12 @@ lvgl:
             long_mode: SCROLL_CIRCULAR
         - label:
             id: departure_destination_label_1
-            width: 232
+            width: 227
             align: TOP_LEFT
             align_to:
               id: departure_time_label_1
               align: OUT_RIGHT_TOP
-              x: 22
+              x: 27
             text_font: network_bold_med
             text: "Destination"
             text_align: LEFT
@@ -393,14 +417,13 @@ lvgl:
             height: 35
             align: TOP_LEFT
             align_to:
-              id: line_colour_bg_1
+              id: line_color_bg_1
               align: OUT_RIGHT_TOP
               x: 372
               y: 122
             border_width: 0
             radius: 0
-            #bg_color: 0x00a3ff    # sunbury blue
-            bg_color: 0xfebe00    # sunbury yellow
+            bg_color: 0x00a3ff    # sunbury blue
             scrollbar_mode: "OFF"
             widgets:
               - label:

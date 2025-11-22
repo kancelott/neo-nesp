@@ -63,11 +63,11 @@ substitutions:
   ################################################################
   # Optional train feature: HA train timetable entities
   ################################################################
-  gtfs2_entity: sensor.watergardens_city
   ptv_departure_0: sensor.sunbury_line_to_footscray_station_from_watergardens_station_0
   ptv_departure_1: sensor.sunbury_line_to_footscray_station_from_watergardens_station_1
   ptv_departure_delta_0: sensor.time_until_sunbury_line_to_footscray_station_from_watergardens_station_0
   ptv_departure_delta_1: sensor.time_until_sunbury_line_to_footscray_station_from_watergardens_station_1
+  gtfs2_entity: sensor.watergardens_footscray
 
   # esphome naming
   friendly_name: 'NESP'

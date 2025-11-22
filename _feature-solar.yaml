@@ -77,11 +77,11 @@ lvgl:
             max_value: 50
             arc_color: graydark
             arc_width: 8
-            arc_rounded: false
+            arc_rounded: False
             indicator:
               arc_color: color_solar_generation
               arc_width: 8
-              arc_rounded: false
+              arc_rounded: False
         - arc:
             id: solar_consum_hvac_arc
             height: 468
@@ -94,17 +94,18 @@ lvgl:
             max_value: 50
             arc_color: graydark
             arc_width: 8
-            arc_rounded: false
+            arc_rounded: False
             indicator:
               arc_color: color_solar_consumption
               arc_width: 8
-              arc_rounded: false
+              arc_rounded: False
         - label:
             id: solar_net_hvac_label
             align: BOTTOM_MID
-            y: -25
-            text_color: gray
-            text: "\U000F0A72 0.0 kW"
+            y: -23
+            text_color: graylight
+            text_align: CENTER
+            text: "+0.0 kW"
 
     - id: !extend weather_page
       widgets:
@@ -119,11 +120,11 @@ lvgl:
             max_value: 50
             arc_color: graydark
             arc_width: 8
-            arc_rounded: false
+            arc_rounded: False
             indicator:
               arc_color: color_solar_generation
               arc_width: 8
-              arc_rounded: false
+              arc_rounded: False
         - arc:
             id: solar_consum_weather_arc
             height: 468
@@ -136,17 +137,18 @@ lvgl:
             max_value: 50
             arc_color: graydark
             arc_width: 8
-            arc_rounded: false
+            arc_rounded: False
             indicator:
               arc_color: color_solar_consumption
               arc_width: 8
-              arc_rounded: false
+              arc_rounded: False
         - label:
             id: solar_net_weather_label
             align: BOTTOM_MID
-            y: -25
-            text_color: gray
-            text: "\U000F0A72 0.0 kW"
+            y: -23
+            text_color: graylight
+            text_align: CENTER
+            text: "+0.0 kW"
 
 script:
   - id: update_menu_solar_label
@@ -162,12 +164,12 @@ script:
       - lvgl.label.update:
           id: solar_net_hvac_label
           text:
-            format: "\U000F0A72 %+.1f kW"
+            format: "%+.1f kW"
             args: [ 'id(solar_net).state' ]
       - lvgl.label.update:
           id: solar_net_weather_label
           text:
-            format: "\U000F0A72 %+.1f kW"
+            format: "%+.1f kW"
             args: [ 'id(solar_net).state' ]
 
   - id: update_solar_gen_arc

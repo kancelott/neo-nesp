@@ -50,6 +50,13 @@ text_sensor:
             - lvgl.label.update:
                 id: perimeter_train_label
                 text: " "
+            - lvgl.widget.hide:
+                - perimeter_hvac_bg
+                - perimeter_hvac_label
+                - perimeter_weather_bg
+                - perimeter_weather_label
+                - perimeter_train_bg
+                - perimeter_train_label
           else:
             - lvgl.label.update:
                 id: perimeter_hvac_label
@@ -69,6 +76,13 @@ text_sensor:
                   static char buf[40];
                   snprintf(buf, sizeof(buf), "  \U000F081C %s  ", x.c_str());
                   return buf;
+            - lvgl.widget.show:
+                - perimeter_hvac_bg
+                - perimeter_hvac_label
+                - perimeter_weather_bg
+                - perimeter_weather_label
+                - perimeter_train_bg
+                - perimeter_train_label
 
 # XXX doesn't seem to work well with on_click
 #binary_sensor:
@@ -151,35 +165,74 @@ lvgl:
   pages:
     - id: !extend hvac_page
       widgets:
+        - arc:
+            id: perimeter_hvac_bg
+            hidden: True
+            height: 468
+            width: 468
+            align: CENTER
+            start_angle: 60
+            end_angle: 120
+            arc_color: black
+            arc_width: 50
+            arc_rounded: False
         - label:
             id: perimeter_hvac_label
+            hidden: True
             align: BOTTOM_MID
-            y: -30
+            y: -27
             text_align: CENTER
             text_color: red
             bg_color: black
+            bg_opa: COVER
             text: " "
 
     - id: !extend weather_page
       widgets:
+        - arc:
+            id: perimeter_weather_bg
+            hidden: True
+            height: 468
+            width: 468
+            align: CENTER
+            start_angle: 60
+            end_angle: 120
+            arc_color: black
+            arc_width: 50
+            arc_rounded: False
         - label:
             id: perimeter_weather_label
+            hidden: True
             align: BOTTOM_MID
-            y: -30
+            y: -27
             text_align: CENTER
             text_color: red
             bg_color: black
+            bg_opa: COVER
             text: " "
 
     - id: !extend train_page
       widgets:
+        - arc:
+            id: perimeter_train_bg
+            hidden: True
+            height: 468
+            width: 468
+            align: CENTER
+            start_angle: 60
+            end_angle: 120
+            arc_color: black
+            arc_width: 50
+            arc_rounded: False
         - label:
             id: perimeter_train_label
+            hidden: True
             align: BOTTOM_MID
-            y: -30
+            y: -27
             text_align: CENTER
             text_color: red
             bg_color: black
+            bg_opa: COVER
             text: " "
 
     - id: !extend menu_page
