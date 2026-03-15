@@ -7,6 +7,7 @@ wifi:
     static_ip: $ip
     gateway: 10.0.80.254
     subnet: 255.255.255.0
+  min_auth_mode: WPA2
 
 # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:

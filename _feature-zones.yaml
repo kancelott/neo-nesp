@@ -96,6 +96,9 @@ font:
 lvgl:
   pages:
     - id: !extend hvac_page
+      on_load:
+        - lvgl.widget.hide:
+          - current_temp_label
       widgets:
         - label:
             id: hvac_zone_2_icon
@@ -184,6 +187,32 @@ lvgl:
             text_align: LEFT
             text: "00°C\n00°C"
 
+    - id: !extend train_page
+      widgets:
+        - label:
+            id: train_zone_2_icon
+            align: CENTER
+            x: -35
+            y: 192
+            text_align: LEFT
+            text: "\U000F0D81"
+            text_color: graydark
+        - label:
+            id: train_zone_1_icon
+            align: CENTER
+            x: -35
+            y: 221
+            text_align: LEFT
+            text: "\U000F0D80"
+            text_color: graydark
+        - label:
+            id: train_zone_temp_label
+            align: CENTER
+            x: 10
+            y: 202
+            text_align: LEFT
+            text: "00°C\n00°C"
+
 script:
   - id: !extend feature_menu_zone_1_toggle
     then:
@@ -199,11 +228,24 @@ script:
           data:
             entity_id: ${zone_2_entity}
 
-  # ZONING UI LOGIC
-  - id: update_zone_temp_label
+  - id: !extend show_big_fan_widget
+    then:
+      - lvgl.widget.hide:
+          - current_zone_temp_label
+          - hvac_zone_1_icon
+          - hvac_zone_2_icon
+  - id: !extend hide_big_fan_widget
     then:
       - lvgl.widget.hide:
           - current_temp_label
+      - lvgl.widget.show:
+          - current_zone_temp_label
+          - hvac_zone_1_icon
+          - hvac_zone_2_icon
+
+  # ZONING UI LOGIC
+  - id: update_zone_temp_label
+    then:
       - lvgl.label.update:
           id: current_zone_temp_label
           text:
@@ -211,6 +253,11 @@ script:
             args: [ 'id(zone_2_temp).state', 'id(zone_1_temp).state' ]
       - lvgl.label.update:
           id: weather_zone_temp_label
+          text:
+            format: "%.0f°C\n%.0f°C"
+            args: [ 'round(id(zone_2_temp).state)', 'round(id(zone_1_temp).state)' ]
+      - lvgl.label.update:
+          id: train_zone_temp_label
           text:
             format: "%.0f°C\n%.0f°C"
             args: [ 'round(id(zone_2_temp).state)', 'round(id(zone_1_temp).state)' ]
@@ -239,6 +286,9 @@ script:
       - lvgl.label.update:
           id: weather_zone_1_icon
           text_color: white
+      - lvgl.label.update:
+          id: train_zone_1_icon
+          text_color: white
 
   - id: unset_zone_1
     then:
@@ -253,6 +303,9 @@ script:
           text_color: graydark
       - lvgl.label.update:
           id: weather_zone_1_icon
+          text_color: graydark
+      - lvgl.label.update:
+          id: train_zone_1_icon
           text_color: graydark
 
   - id: set_zone_2
@@ -269,6 +322,9 @@ script:
       - lvgl.label.update:
           id: weather_zone_2_icon
           text_color: white
+      - lvgl.label.update:
+          id: train_zone_2_icon
+          text_color: white
 
   - id: unset_zone_2
     then:
@@ -283,4 +339,7 @@ script:
           text_color: graydark
       - lvgl.label.update:
           id: weather_zone_2_icon
+          text_color: graydark
+      - lvgl.label.update:
+          id: train_zone_2_icon
           text_color: graydark

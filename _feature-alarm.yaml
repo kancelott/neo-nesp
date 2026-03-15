@@ -56,6 +56,7 @@ text_sensor:
                 - perimeter_weather_bg
                 - perimeter_weather_label
                 - perimeter_train_bg
+                - perimeter_train_bg2
                 - perimeter_train_label
           else:
             - lvgl.label.update:
@@ -82,6 +83,7 @@ text_sensor:
                 - perimeter_weather_bg
                 - perimeter_weather_label
                 - perimeter_train_bg
+                - perimeter_train_bg2
                 - perimeter_train_label
 
 # XXX doesn't seem to work well with on_click
@@ -224,6 +226,15 @@ lvgl:
             arc_color: black
             arc_width: 50
             arc_rounded: False
+        - obj:
+            id: perimeter_train_bg2
+            hidden: True
+            height: 70
+            width: 100
+            align: BOTTOM_MID
+            border_width: 0
+            bg_color: black
+            bg_opa: COVER
         - label:
             id: perimeter_train_label
             hidden: True

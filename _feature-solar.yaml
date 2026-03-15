@@ -171,6 +171,34 @@ script:
           text:
             format: "%+.1f kW"
             args: [ 'id(solar_net).state' ]
+      - if:
+          condition:
+            lambda: 'return id(solar_net).state > 0;'
+          then:
+            - lvgl.label.update:
+                id: solar_net_hvac_label
+                text_color: white
+            - lvgl.label.update:
+                id: solar_net_weather_label
+                text_color: white
+          else:
+            if:
+              condition:
+                lambda: 'return id(solar_net).state < -2.0;'
+              then:
+                - lvgl.label.update:
+                    id: solar_net_hvac_label
+                    text_color: color_solar_consumption
+                - lvgl.label.update:
+                    id: solar_net_weather_label
+                    text_color: color_solar_consumption
+              else:
+                - lvgl.label.update:
+                    id: solar_net_hvac_label
+                    text_color: graylight
+                - lvgl.label.update:
+                    id: solar_net_weather_label
+                    text_color: graylight
 
   - id: update_solar_gen_arc
     then:

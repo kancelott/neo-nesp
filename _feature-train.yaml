@@ -120,32 +120,33 @@ text_sensor:
     on_value:
       - script.execute: update_departure_label_1
 
-  ### HASS train - train type
-  - platform: homeassistant
-    entity_id: ${ptv_departure_0}
-    attribute: train_type
-    id: train_type_0
-    internal: true
-    filters:
-      - substitute:
-        - "3 Car  -> "
-        - "6 Car  -> "
-        - "7 Car  -> "
-    on_value:
-      - script.execute: update_departure_label_0
-  - platform: homeassistant
-    entity_id: ${ptv_departure_1}
-    attribute: train_type
-    id: train_type_1
-    internal: true
-    filters:
-      - substitute:
-        - "3 Car  -> "
-        - "6 Car  -> "
-        - "7 Car  -> "
-        - "Silver Hitachi -> HCMT"
-    on_value:
-      - script.execute: update_departure_label_1
+#  ### HASS train - train type
+#  - platform: homeassistant
+#    entity_id: ${ptv_departure_0}
+#    attribute: train_type
+#    id: train_type_0
+#    internal: true
+#    filters:
+#      - substitute:
+#        - "3 Car  -> "
+#        - "6 Car  -> "
+#        - "7 Car  -> "
+#        - "Silver Hitachi -> HCMT"
+#    on_value:
+#      - script.execute: update_departure_label_0
+#  - platform: homeassistant
+#    entity_id: ${ptv_departure_1}
+#    attribute: train_type
+#    id: train_type_1
+#    internal: true
+#    filters:
+#      - substitute:
+#        - "3 Car  -> "
+#        - "6 Car  -> "
+#        - "7 Car  -> "
+#        - "Silver Hitachi -> HCMT"
+#    on_value:
+#      - script.execute: update_departure_label_1
 
   - platform: homeassistant
     entity_id: ${gtfs2_entity}
@@ -173,6 +174,16 @@ text_sensor:
           bg_color: !lambda |-
             lv_color_t color = lv_color_hex(strtoul(x.c_str(), NULL, 16));
             return color;
+      - lvgl.label.update:
+          id: next_train_indicator_0
+          text_color: !lambda |-
+            lv_color_t color = lv_color_hex(strtoul(x.c_str(), NULL, 16));
+            return color;
+      - lvgl.label.update:
+          id: next_train_indicator_1
+          text_color: !lambda |-
+            lv_color_t color = lv_color_hex(strtoul(x.c_str(), NULL, 16));
+            return color;
 
   - platform: homeassistant
     entity_id: ${ptv_departure_0}
@@ -194,6 +205,25 @@ text_sensor:
             - lvgl.label.update:
                 id: disruption_label
                 text: !lambda 'return x.c_str();'
+
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: disruption_colors
+    id: disruptions_colors_0
+    internal: true
+    on_value:
+      - lvgl.widget.update:
+          id: disruption_bg
+          arc_color: !lambda |-
+            std::string first_color = x.substr(0, x.find(';'));
+            lv_color_t color = lv_color_hex(strtoul(first_color.c_str(), NULL, 16));
+            return color;
+      - lvgl.label.update:
+          id: disruption_label
+          text_color: !lambda |-
+            std::string first_color = x.substr(0, x.find(';'));
+            lv_color_t color = lv_color_hex(strtoul(first_color.c_str(), NULL, 16));
+            return color;
 
 binary_sensor:
   ### HASS train - destination city loop?
@@ -224,6 +254,7 @@ font:
       - file: "neo-nesp/fonts/materialdesignicons-webfont.ttf"
         glyphs: [
           "\U000F052C", # mdi:train
+          "\U000F09DF", # mdi:circle-small
           ]
   - file: "neo-nesp/fonts/NETWORKSANS-2019-REGULAR.TTF"
     glyphs: ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ°.:/+-%–*•'
@@ -304,16 +335,28 @@ lvgl:
             text_color: black
             bg_color: white
             bg_opa: COVER
+
+        - label:
+            id: next_train_indicator_0
+            align: TOP_RIGHT
+            align_to:
+              id: line_color_bg_0
+              align: OUT_LEFT_TOP
+              x: 13
+              y: 106
+            text_font: roboto_med
+            text: "\U000F09DF"
+            text_color: 0x4f9dd0  # cranbourne blue
         - obj:
             id: line_color_bg_0
             align: LEFT_MID
             width: 12
             height: 80
-            x: 33
+            x: 30
             y: -50
             border_width: 0
             radius: 0
-            bg_color: 0xffbe00    # sunbury yellow
+            bg_color: 0x4f9dd0  # cranbourne blue
         - label:
             id: departure_time_label_0
             align: TOP_LEFT
@@ -321,18 +364,18 @@ lvgl:
               id: line_color_bg_0
               align: OUT_RIGHT_TOP
               x: 10
-              y: 112
+              y: 112  # weird alignment
             text_font: network_med
             text: "0:00"
             text_align: LEFT
         - label:
             id: departure_destination_label_0
-            width: 227
+            width: 226
             align: TOP_LEFT
             align_to:
               id: departure_time_label_0
               align: OUT_RIGHT_TOP
-              x: 27
+              x: 29
             text_font: network_bold_med
             text: "Destination"
             text_align: LEFT
@@ -359,7 +402,7 @@ lvgl:
               y: 122
             border_width: 0
             radius: 0
-            bg_color: 0xffbe00    # sunbury yellow
+            bg_color: 0x4f9dd0  # cranbourne blue
             scrollbar_mode: "OFF"
             widgets:
               - label:
@@ -367,36 +410,48 @@ lvgl:
                   align: CENTER
                   text_font: network_bold_reg
                   text: "0"
-                  text_color: black
+                  text_color: white
+
+        - label:
+            id: next_train_indicator_1
+            align: TOP_RIGHT
+            align_to:
+              id: line_color_bg_1
+              align: OUT_LEFT_TOP
+              x: 13
+              y: 106
+            text_font: roboto_med
+            text: "\U000F09DF"
+            text_color: 0x4f9dd0  # cranbourne blue
         - obj:
             id: line_color_bg_1
             align: LEFT_MID
             width: 12
             height: 80
-            x: 31
+            x: 30
             y: 58
             border_width: 0
             radius: 0
-            bg_color: 0x00a3ff    # sunbury blue
+            bg_color: 0x4f9dd0  # cranbourne blue
         - label:
             id: departure_time_label_1
+            align: TOP_LEFT
             align_to:
               id: line_color_bg_1
               align: OUT_RIGHT_TOP
               x: 10
-              y: 112
+              y: 112  # weird alignment
             text_font: network_med
             text: "0:00"
             text_align: LEFT
-            long_mode: SCROLL_CIRCULAR
         - label:
             id: departure_destination_label_1
-            width: 227
+            width: 226
             align: TOP_LEFT
             align_to:
               id: departure_time_label_1
               align: OUT_RIGHT_TOP
-              x: 27
+              x: 29
             text_font: network_bold_med
             text: "Destination"
             text_align: LEFT
@@ -423,7 +478,7 @@ lvgl:
               y: 122
             border_width: 0
             radius: 0
-            bg_color: 0x00a3ff    # sunbury blue
+            bg_color: 0x4f9dd0  # cranbourne blue
             scrollbar_mode: "OFF"
             widgets:
               - label:
@@ -431,7 +486,7 @@ lvgl:
                   align: CENTER
                   text_font: network_bold_reg
                   text: "0"
-                  text_color: black
+                  text_color: white
 
 script:
   - id: !extend goto_train_page
@@ -462,17 +517,30 @@ script:
           text: !lambda |-
             static char buf[16];
             int TRAVEL_TIME_MINUTES = 5;
-            //if (id(departure_delta_0).state <= 1) {
-            //  snprintf(buf, sizeof(buf), "  NOW  ");
-            //} else {
-            //  snprintf(buf, sizeof(buf), "  %.0f min  ", id(departure_delta_0).state);
-            //}
             if (id(departure_delta_0).state >= TRAVEL_TIME_MINUTES) {
               snprintf(buf, sizeof(buf), "  %.0f min  ", id(departure_delta_0).state);
             } else {
               snprintf(buf, sizeof(buf), "  %.0f min  ", id(departure_delta_1).state);
             }
             return buf;
+      - lvgl.label.update:
+          id: next_train_indicator_0
+          hidden: !lambda |-
+            int TRAVEL_TIME_MINUTES = 5;
+            if (id(departure_delta_0).state >= TRAVEL_TIME_MINUTES) {
+              return false;
+            } else {
+              return true;
+            }
+      - lvgl.label.update:
+          id: next_train_indicator_1
+          hidden: !lambda |-
+            int TRAVEL_TIME_MINUTES = 5;
+            if (id(departure_delta_0).state >= TRAVEL_TIME_MINUTES) {
+              return true;
+            } else {
+              return false;
+            }
   - id: update_departure_label_0
     then:
       - lvgl.label.update:
@@ -496,17 +564,19 @@ script:
           text: !lambda |-
             static char buf[64];
             if (id(delay_0).state < 2) {
-              if (id(train_type_0).state != "") {
-                snprintf(buf, sizeof(buf), "On time -%s", id(train_type_0).state.c_str());
-              } else {
-                snprintf(buf, sizeof(buf), "On time");
-              }
+              snprintf(buf, sizeof(buf), "On time");
+              //if (id(train_type_0).state != "") {
+              //  snprintf(buf, sizeof(buf), "On time -%s", id(train_type_0).state.c_str());
+              //} else {
+              //  snprintf(buf, sizeof(buf), "On time");
+              //}
             } else {
-              if (id(train_type_0).state == "") {
-                snprintf(buf, sizeof(buf), "Delay %.0fm –%s", id(delay_0).state, id(train_type_0).state.c_str());
-              } else {
-                snprintf(buf, sizeof(buf), "Delay %.0fm", id(delay_0).state);
-              }
+              snprintf(buf, sizeof(buf), "Delay %.0fm", id(delay_0).state);
+              //if (id(train_type_0).state != "") {
+              //  snprintf(buf, sizeof(buf), "Delay %.0fm –%s", id(delay_0).state, id(train_type_0).state.c_str());
+              //} else {
+              //  snprintf(buf, sizeof(buf), "Delay %.0fm", id(delay_0).state);
+              //}
             }
             return buf;
   - id: update_departure_label_1
@@ -532,17 +602,19 @@ script:
           text: !lambda |-
             static char buf[64];
             if (id(delay_1).state < 2) {
-              if (id(train_type_1).state != "") {
-                snprintf(buf, sizeof(buf), "On time –%s", id(train_type_1).state.c_str());
-              } else {
-                snprintf(buf, sizeof(buf), "On time");
-              }
+              snprintf(buf, sizeof(buf), "On time");
+              //if (id(train_type_1).state != "") {
+              //  snprintf(buf, sizeof(buf), "On time –%s", id(train_type_1).state.c_str());
+              //} else {
+              //  snprintf(buf, sizeof(buf), "On time");
+              //}
             } else {
-              if (id(train_type_1).state != "") {
-                snprintf(buf, sizeof(buf), "Delay %.0fm –%s", id(delay_1).state, id(train_type_1).state.c_str());
-              } else {
-                snprintf(buf, sizeof(buf), "Delay %.0fm", id(delay_1).state);
-              }
+              snprintf(buf, sizeof(buf), "Delay %.0fm", id(delay_1).state);
+              //if (id(train_type_1).state != "") {
+              //  snprintf(buf, sizeof(buf), "Delay %.0fm –%s", id(delay_1).state, id(train_type_1).state.c_str());
+              //} else {
+              //  snprintf(buf, sizeof(buf), "Delay %.0fm", id(delay_1).state);
+              //}
             }
             return buf;
 
