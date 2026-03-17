@@ -195,3 +195,24 @@ color:
     green: 0.314
     blue: 0.000
     white: 0.0
+
+  # BATTERY - Battery Charged
+  - id: color_battery_charged
+    red: 0.000
+    green: 0.690
+    blue: 0.314
+    white: 0.0
+
+  # BATTERY - Battery Depleted
+  - id: color_battery_depleted
+    red: 0.725
+    green: 0.000
+    blue: 0.000
+    white: 0.0
+
+  # BATTERY - Battery Power
+  - id: color_battery_power
+    red: 0.383
+    green: 0.620
+    blue: 0.835
+    white: 0.0

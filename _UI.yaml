@@ -13,6 +13,9 @@ globals:
   - id: feature_solar_enabled
     type: int
     initial_value: '0'
+  - id: feature_battery_enabled
+    type: int
+    initial_value: '0'
   - id: feature_weather_enabled
     type: int
     initial_value: '0'

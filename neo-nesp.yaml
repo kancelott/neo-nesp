@@ -6,10 +6,11 @@ packages:
   # Comment out lines below for unused optional features
   ################################################################
   feature_zones: !include _feature-zones.yaml
-  feature_solar: !include _feature-solar.yaml
-  feature_weather: !include _feature-weather.yaml
-  feature_alarm: !include _feature-alarm.yaml
-  feature_train: !include _feature-train.yaml
+  #feature_solar: !include _feature-solar.yaml
+  #feature_battery: !include _feature-battery.yaml
+  #feature_weather: !include _feature-weather.yaml
+  #feature_alarm: !include _feature-alarm.yaml
+  #feature_train: !include _feature-train.yaml
 
 substitutions:
   ################################################################
@@ -28,46 +29,57 @@ substitutions:
   zone_2_humidity_entity: sensor.xiaomi_temp_2_humidity
 
   ################################################################
-  # Optional solar feature: HA electricity generation/consumption entities
+  # Optional solar feature: HA solar/electricity entities
   ################################################################
-  solar_generation_entity: sensor.power_solar_generation
-  solar_consumption_entity: sensor.power_consumption
-  solar_net_entity: sensor.power_net_generation
+  #solar_generation_entity: sensor.power_solar_generation
+  #solar_consumption_entity: sensor.power_consumption
+  #solar_net_entity: sensor.power_net_generation
+
+  ################################################################
+  # Optional battery feature: HA battery/solar/electricity entities
+  ################################################################
+  # battery_bat_soc_entity: sensor.foxess_bat_soc
+  # battery_solar_entity: sensor.power_solar_generation
+  # battery_house_load_entity: sensor.foxess_load_power
+  # battery_grid_import_entity: sensor.power_grid_import
+  # battery_grid_export_entity: sensor.power_grid_export
+  # battery_bat_charge_entity: sensor.foxess_bat_charge_power
+  # battery_bat_discharge_entity: sensor.foxess_bat_discharge_power
 
   ################################################################
   # Optional weather feature: HA weather entities
   ################################################################
-  weather_entity: weather.bom_melbourne
-  weather_icon: weather.bom_melbourne
-  weather_text: sensor.bom_melbourne_short_text_0
-  weather_now_temp: sensor.bom_melbourne_now_temp_now
-  weather_now_label: sensor.bom_melbourne_now_now_label
-  weather_later_temp: sensor.bom_melbourne_now_temp_later
-  weather_later_label: sensor.bom_melbourne_now_later_label
-  weather_feels_like: sensor.bom_melbourne_temp_feels_like
-  weather_rain: sensor.bom_melbourne_rain_amount_range_0
-  weather_rain_chance: sensor.bom_melbourne_rain_chance_0
-  weather_uv: sensor.bom_melbourne_uv_category_0
-  weather_pollen: sensor.oz_poll_allergy_forecast
-  weather_tomorrow_icon: sensor.bom_melbourne_mdi_icon_1
-  weather_tomorrow_text: sensor.bom_melbourne_short_text_1
-  weather_tomorrow_temp_low: sensor.bom_melbourne_temp_min_1
-  weather_tomorrow_temp_high: sensor.bom_melbourne_temp_max_1
+  # weather_entity: weather.bom_melbourne
+  # weather_icon: weather.bom_melbourne
+  # weather_text: sensor.bom_melbourne_short_text_0
+  # weather_now_temp: sensor.bom_melbourne_now_temp_now
+  # weather_now_label: sensor.bom_melbourne_now_now_label
+  # weather_later_temp: sensor.bom_melbourne_now_temp_later
+  # weather_later_label: sensor.bom_melbourne_now_later_label
+  # weather_feels_like: sensor.bom_melbourne_temp_feels_like
+  # weather_rain: sensor.bom_melbourne_rain_amount_range_0
+  # weather_rain_chance: sensor.bom_melbourne_rain_chance_0
+  # weather_uv: sensor.bom_melbourne_uv_category_0
+  # weather_pollen: sensor.oz_poll_allergy_forecast
+  # weather_tomorrow_icon: sensor.bom_melbourne_mdi_icon_1
+  # weather_tomorrow_text: sensor.bom_melbourne_short_text_1
+  # weather_tomorrow_temp_low: sensor.bom_melbourne_temp_min_1
+  # weather_tomorrow_temp_high: sensor.bom_melbourne_temp_max_1
 
   ################################################################
   # Optional alarm feature: HA alarm entities
   ################################################################
-  alarm_entity: alarm_control_panel.alarmo
-  alarm_perimeter_entity: sensor.perimeter_trigger
+  # alarm_entity: alarm_control_panel.alarmo
+  # alarm_perimeter_entity: sensor.perimeter_trigger
 
   ################################################################
   # Optional train feature: HA train timetable entities
   ################################################################
-  ptv_departure_0: sensor.sunbury_line_to_footscray_station_from_watergardens_station_0
-  ptv_departure_1: sensor.sunbury_line_to_footscray_station_from_watergardens_station_1
-  ptv_departure_delta_0: sensor.time_until_sunbury_line_to_footscray_station_from_watergardens_station_0
-  ptv_departure_delta_1: sensor.time_until_sunbury_line_to_footscray_station_from_watergardens_station_1
-  gtfs2_entity: sensor.watergardens_footscray
+  # ptv_departure_0: sensor.sunbury_line_to_footscray_station_from_watergardens_station_0
+  # ptv_departure_1: sensor.sunbury_line_to_footscray_station_from_watergardens_station_1
+  # ptv_departure_delta_0: sensor.time_until_sunbury_line_to_footscray_station_from_watergardens_station_0
+  # ptv_departure_delta_1: sensor.time_until_sunbury_line_to_footscray_station_from_watergardens_station_1
+  # gtfs2_entity: sensor.watergardens_footscray
 
   # esphome naming
   friendly_name: 'NESP'

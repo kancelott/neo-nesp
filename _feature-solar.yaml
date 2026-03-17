@@ -1,5 +1,5 @@
 #
-# neo-nesp optional feature: solar generation/electricity consumption readout
+# neo-nesp optional feature: solar generation & electricity consumption readout
 #
 
 esphome:
@@ -49,7 +49,6 @@ font:
         glyphs: [
           "\U000F1903", # mdi:home-lightning-bolt
           "\U000F1A73", # mdi:solar-power-variant
-          "\U000F0A72", # mdi:solar-power
           ]
 
 lvgl:
