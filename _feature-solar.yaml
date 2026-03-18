@@ -66,7 +66,7 @@ lvgl:
     - id: !extend hvac_page
       widgets:
         - arc:
-            id: solar_gen_hvac_arc
+            id: hvac_solar_gen_arc
             height: 468
             width: 468
             align: CENTER
@@ -82,7 +82,7 @@ lvgl:
               arc_width: 8
               arc_rounded: False
         - arc:
-            id: solar_consum_hvac_arc
+            id: hvac_solar_consum_arc
             height: 468
             width: 468
             align: CENTER
@@ -99,7 +99,7 @@ lvgl:
               arc_width: 8
               arc_rounded: False
         - label:
-            id: solar_net_hvac_label
+            id: hvac_solar_net_label
             align: BOTTOM_MID
             y: -23
             text_color: graylight
@@ -109,7 +109,7 @@ lvgl:
     - id: !extend weather_page
       widgets:
         - arc:
-            id: solar_gen_weather_arc
+            id: weather_solar_gen_arc
             height: 468
             width: 468
             align: CENTER
@@ -125,7 +125,7 @@ lvgl:
               arc_width: 8
               arc_rounded: False
         - arc:
-            id: solar_consum_weather_arc
+            id: weather_solar_consum_arc
             height: 468
             width: 468
             align: CENTER
@@ -142,7 +142,7 @@ lvgl:
               arc_width: 8
               arc_rounded: False
         - label:
-            id: solar_net_weather_label
+            id: weather_solar_net_label
             align: BOTTOM_MID
             y: -23
             text_color: graylight
@@ -161,12 +161,12 @@ script:
   - id: update_solar_net_label
     then:
       - lvgl.label.update:
-          id: solar_net_hvac_label
+          id: hvac_solar_net_label
           text:
             format: "%+.1f kW"
             args: [ 'id(solar_net).state' ]
       - lvgl.label.update:
-          id: solar_net_weather_label
+          id: weather_solar_net_label
           text:
             format: "%+.1f kW"
             args: [ 'id(solar_net).state' ]
@@ -175,10 +175,10 @@ script:
             lambda: 'return id(solar_net).state > 0;'
           then:
             - lvgl.label.update:
-                id: solar_net_hvac_label
+                id: hvac_solar_net_label
                 text_color: white
             - lvgl.label.update:
-                id: solar_net_weather_label
+                id: weather_solar_net_label
                 text_color: white
           else:
             if:
@@ -186,33 +186,33 @@ script:
                 lambda: 'return id(solar_net).state < -2.0;'
               then:
                 - lvgl.label.update:
-                    id: solar_net_hvac_label
+                    id: hvac_solar_net_label
                     text_color: color_solar_consumption
                 - lvgl.label.update:
-                    id: solar_net_weather_label
+                    id: weather_solar_net_label
                     text_color: color_solar_consumption
               else:
                 - lvgl.label.update:
-                    id: solar_net_hvac_label
+                    id: hvac_solar_net_label
                     text_color: graylight
                 - lvgl.label.update:
-                    id: solar_net_weather_label
+                    id: weather_solar_net_label
                     text_color: graylight
 
   - id: update_solar_gen_arc
     then:
       - lvgl.arc.update:
-          id: solar_gen_hvac_arc
+          id: hvac_solar_gen_arc
           value: !lambda return id(solar_generation).state * 10;
       - lvgl.arc.update:
-          id: solar_gen_weather_arc
+          id: weather_solar_gen_arc
           value: !lambda return id(solar_generation).state * 10;
 
   - id: update_solar_consum_arc
     then:
       - lvgl.arc.update:
-          id: solar_consum_hvac_arc
+          id: hvac_solar_consum_arc
           value: !lambda return id(solar_consumption).state * 10;
       - lvgl.arc.update:
-          id: solar_consum_weather_arc
+          id: weather_solar_consum_arc
           value: !lambda return id(solar_consumption).state * 10;

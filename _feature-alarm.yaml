@@ -176,7 +176,7 @@ lvgl:
             start_angle: 60
             end_angle: 120
             arc_color: black
-            arc_width: 50
+            arc_width: 55
             arc_rounded: False
         - label:
             id: perimeter_hvac_label
@@ -200,7 +200,7 @@ lvgl:
             start_angle: 60
             end_angle: 120
             arc_color: black
-            arc_width: 50
+            arc_width: 55
             arc_rounded: False
         - label:
             id: perimeter_weather_label
@@ -224,7 +224,7 @@ lvgl:
             start_angle: 60
             end_angle: 120
             arc_color: black
-            arc_width: 50
+            arc_width: 55
             arc_rounded: False
         - obj:
             id: perimeter_train_bg2
