@@ -39,10 +39,10 @@ substitutions:
   # Optional battery feature: HA battery/solar/electricity entities
   ################################################################
   # battery_bat_soc_entity: sensor.foxess_bat_soc
-  # battery_solar_entity: sensor.power_solar_generation
+  # battery_solar_entity: sensor.foxess_solar_power
   # battery_house_load_entity: sensor.foxess_load_power
-  # battery_grid_import_entity: sensor.power_grid_import
-  # battery_grid_export_entity: sensor.power_grid_export
+  # battery_grid_import_entity: sensor.foxess_grid_consumption_power
+  # battery_grid_export_entity: sensor.foxess_feedin_power
   # battery_bat_charge_entity: sensor.foxess_bat_charge_power
   # battery_bat_discharge_entity: sensor.foxess_bat_discharge_power
 
