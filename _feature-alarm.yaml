@@ -170,13 +170,13 @@ lvgl:
         - arc:
             id: perimeter_hvac_bg
             hidden: True
-            height: 470
-            width: 470
+            height: 480
+            width: 480
             align: CENTER
-            start_angle: 60
-            end_angle: 120
+            start_angle: 55
+            end_angle: 125
             arc_color: black
-            arc_width: 60
+            arc_width: 50
             arc_rounded: False
         - label:
             id: perimeter_hvac_label
@@ -194,13 +194,13 @@ lvgl:
         - arc:
             id: perimeter_weather_bg
             hidden: True
-            height: 470
-            width: 470
+            height: 480
+            width: 480
             align: CENTER
-            start_angle: 60
-            end_angle: 120
+            start_angle: 55
+            end_angle: 125
             arc_color: black
-            arc_width: 60
+            arc_width: 50
             arc_rounded: False
         - label:
             id: perimeter_weather_label
@@ -218,13 +218,13 @@ lvgl:
         - arc:
             id: perimeter_train_bg
             hidden: True
-            height: 470
-            width: 470
+            height: 480
+            width: 480
             align: CENTER
-            start_angle: 60
-            end_angle: 120
+            start_angle: 55
+            end_angle: 125
             arc_color: black
-            arc_width: 60
+            arc_width: 50
             arc_rounded: False
         - obj:
             id: perimeter_train_bg2

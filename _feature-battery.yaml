@@ -54,6 +54,8 @@ sensor:
       - round: 1
     on_value:
       - script.execute: update_battery_label
+      - script.execute: update_bat_arc
+      - script.execute: update_load_arc
 
   ### HASS - GRID EXPORT kW
   - platform: homeassistant
@@ -63,6 +65,7 @@ sensor:
     filters:
       - round: 1
     on_value:
+      - script.execute: update_battery_label
       - script.execute: update_bat_arc
       - script.execute: update_load_arc
 
@@ -74,8 +77,9 @@ sensor:
     filters:
       - round: 1
     on_value:
-      - script.execute: update_bat_arc
       - script.execute: update_bat_soc_arc
+      - script.execute: update_bat_arc
+      - script.execute: update_load_arc
 
   ### HASS - BATTERY DISCHARGE kW
   - platform: homeassistant
@@ -85,6 +89,8 @@ sensor:
     filters:
       - round: 1
     on_value:
+      - script.execute: update_battery_label
+      - script.execute: update_bat_arc
       - script.execute: update_load_arc
 
 font:
@@ -95,7 +101,9 @@ font:
           "\U000F1901", # mdi:home-battery
           "\U000F1A73", # mdi:solar-power-variant
           "\U000F1903", # mdi:home-lightning-bolt
+          "\U000F192C", # mdi:transmission-tower-export
           "\U000F192D", # mdi:transmission-tower-import
+          "\U000F1902", # mdi:home-battery-outline
           ]
 
 lvgl:
@@ -117,7 +125,7 @@ lvgl:
             height: 468
             width: 468
             align: CENTER
-            x: -4
+            x: -6
             start_angle: 90
             end_angle: 120
             min_value: 0
@@ -126,7 +134,7 @@ lvgl:
             arc_width: 8
             arc_rounded: False
             indicator:
-              arc_color: color_solar_generation
+              arc_color: color_battery_solar
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -134,14 +142,14 @@ lvgl:
             height: 468
             width: 468
             align: CENTER
-            x: -4
+            x: -6
             start_angle: 90
             end_angle: 120
             min_value: 0
             max_value: 50
             arc_opa: TRANSP
             indicator:
-              arc_color: color_solar_consumption
+              arc_color: color_battery_grid
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -149,14 +157,14 @@ lvgl:
             height: 468
             width: 468
             align: CENTER
-            x: -4
+            x: -6
             start_angle: 90
             end_angle: 120
             min_value: 0
             max_value: 50
             arc_opa: TRANSP
             indicator:
-              arc_color: cyan
+              arc_color: color_battery_bat
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -164,14 +172,14 @@ lvgl:
             height: 469
             width: 469
             align: CENTER
-            x: -4
+            x: -6
             start_angle: 90
             end_angle: 120
             min_value: 0
             max_value: 100
             arc_opa: TRANSP
             indicator:
-              arc_color: green
+              arc_color: color_battery_charge
               arc_width: 3
               arc_rounded: False
 
@@ -190,7 +198,7 @@ lvgl:
             arc_width: 8
             arc_rounded: False
             indicator:
-              arc_color: color_solar_generation
+              arc_color: color_battery_solar
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -206,7 +214,7 @@ lvgl:
             max_value: 50
             arc_opa: TRANSP
             indicator:
-              arc_color: cyan
+              arc_color: color_battery_bat
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -222,7 +230,7 @@ lvgl:
             max_value: 50
             arc_opa: TRANSP
             indicator:
-              arc_color: color_solar_consumption
+              arc_color: color_battery_grid
               arc_width: 8
               arc_rounded: False
 
@@ -241,7 +249,7 @@ lvgl:
             height: 468
             width: 468
             align: CENTER
-            x: -4
+            x: -6
             start_angle: 90
             end_angle: 120
             min_value: 0
@@ -250,7 +258,7 @@ lvgl:
             arc_width: 8
             arc_rounded: False
             indicator:
-              arc_color: color_solar_generation
+              arc_color: color_battery_solar
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -258,14 +266,14 @@ lvgl:
             height: 468
             width: 468
             align: CENTER
-            x: -4
+            x: -6
             start_angle: 90
             end_angle: 120
             min_value: 0
             max_value: 50
             arc_opa: TRANSP
             indicator:
-              arc_color: color_solar_consumption
+              arc_color: color_battery_grid
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -273,14 +281,14 @@ lvgl:
             height: 468
             width: 468
             align: CENTER
-            x: -4
+            x: -6
             start_angle: 90
             end_angle: 120
             min_value: 0
             max_value: 50
             arc_opa: TRANSP
             indicator:
-              arc_color: cyan
+              arc_color: color_battery_bat
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -288,14 +296,14 @@ lvgl:
             height: 469
             width: 469
             align: CENTER
-            x: -4
+            x: -6
             start_angle: 90
             end_angle: 120
             min_value: 0
             max_value: 100
             arc_opa: TRANSP
             indicator:
-              arc_color: green
+              arc_color: color_battery_charge
               arc_width: 3
               arc_rounded: False
 
@@ -314,7 +322,7 @@ lvgl:
             arc_width: 8
             arc_rounded: False
             indicator:
-              arc_color: color_solar_generation
+              arc_color: color_battery_solar
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -330,7 +338,7 @@ lvgl:
             max_value: 50
             arc_opa: TRANSP
             indicator:
-              arc_color: cyan
+              arc_color: color_battery_bat
               arc_width: 8
               arc_rounded: False
         - arc:
@@ -346,7 +354,7 @@ lvgl:
             max_value: 50
             arc_opa: TRANSP
             indicator:
-              arc_color: color_solar_consumption
+              arc_color: color_battery_grid
               arc_width: 8
               arc_rounded: False
 
@@ -357,6 +365,123 @@ lvgl:
             text_color: graylight
             text_align: CENTER
             text: "\U000F1903 0.0 kW"
+
+    - id: !extend train_page
+      widgets:
+        - arc:
+            id: train_bat_charge_solar_arc
+            height: 468
+            width: 468
+            align: CENTER
+            x: -6
+            start_angle: 90
+            end_angle: 120
+            min_value: 0
+            max_value: 50
+            arc_color: graydark
+            arc_width: 8
+            arc_rounded: False
+            indicator:
+              arc_color: color_battery_solar
+              arc_width: 8
+              arc_rounded: False
+        - arc:
+            id: train_bat_charge_grid_arc
+            height: 468
+            width: 468
+            align: CENTER
+            x: -6
+            start_angle: 90
+            end_angle: 120
+            min_value: 0
+            max_value: 50
+            arc_opa: TRANSP
+            indicator:
+              arc_color: color_battery_grid
+              arc_width: 8
+              arc_rounded: False
+        - arc:
+            id: train_bat_discharge_grid_arc
+            height: 468
+            width: 468
+            align: CENTER
+            x: -6
+            start_angle: 90
+            end_angle: 120
+            min_value: 0
+            max_value: 50
+            arc_opa: TRANSP
+            indicator:
+              arc_color: color_battery_bat
+              arc_width: 8
+              arc_rounded: False
+        - arc:
+            id: train_bat_soc_arc
+            height: 469
+            width: 469
+            align: CENTER
+            x: -6
+            start_angle: 90
+            end_angle: 120
+            min_value: 0
+            max_value: 100
+            arc_opa: TRANSP
+            indicator:
+              arc_color: color_battery_charge
+              arc_width: 3
+              arc_rounded: False
+
+        - arc:
+            id: train_load_solar_arc
+            height: 468
+            width: 468
+            align: CENTER
+            x: 4
+            start_angle: 60
+            end_angle: 90
+            mode: REVERSE
+            min_value: 0
+            max_value: 50
+            arc_color: graydark
+            arc_width: 8
+            arc_rounded: False
+            indicator:
+              arc_color: color_battery_solar
+              arc_width: 8
+              arc_rounded: False
+        - arc:
+            id: train_load_bat_arc
+            height: 468
+            width: 468
+            align: CENTER
+            x: 4
+            start_angle: 60
+            end_angle: 90
+            mode: REVERSE
+            min_value: 0
+            max_value: 50
+            arc_opa: TRANSP
+            indicator:
+              arc_color: color_battery_bat
+              arc_width: 8
+              arc_rounded: False
+        - arc:
+            id: train_load_grid_arc
+            height: 468
+            width: 468
+            align: CENTER
+            x: 4
+            start_angle: 60
+            end_angle: 90
+            mode: REVERSE
+            min_value: 0
+            max_value: 50
+            arc_opa: TRANSP
+            indicator:
+              arc_color: color_battery_grid
+              arc_width: 8
+              arc_rounded: False
+
 
 script:
   - id: update_menu_battery_label
@@ -371,47 +496,47 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return id(battery_grid_import).state > 0;'
+            lambda: 'return id(battery_grid_export).state > 4.5;'
           then:
-            # status: grid import
+            # status: grid export
             - lvgl.label.update:
                 id: hvac_battery_label
                 text:
-                  format: "\U000F192D %.1f kW"
-                  args: [ 'id(battery_grid_import).state' ]
+                  format: "\U000F1902 %.1f kW"
+                  args: [ 'id(battery_bat_discharge).state' ]
             - lvgl.label.update:
                 id: weather_battery_label
                 text:
-                  format: "\U000F192D %.1f kW"
-                  args: [ 'id(battery_grid_import).state' ]
+                  format: "\U000F1902 %.1f kW"
+                  args: [ 'id(battery_bat_discharge).state' ]
             - lvgl.label.update:
                 id: hvac_battery_label
-                text_color: color_solar_consumption
+                text_color: color_battery_bat
             - lvgl.label.update:
                 id: weather_battery_label
-                text_color: color_solar_consumption
+                text_color: color_battery_bat
           else:
             if:
               condition:
-                lambda: 'return id(battery_grid_export).state > 0;'
+                lambda: 'return id(battery_grid_import).state > 0.1;'
               then:
-                # status: grid export
+                # status: grid import
                 - lvgl.label.update:
                     id: hvac_battery_label
                     text:
-                      format: "\U000F1903 -%.1f kW"
-                      args: [ 'id(battery_grid_export).state' ]
+                      format: "\U000F192D %.1f kW"
+                      args: [ 'id(battery_grid_import).state' ]
                 - lvgl.label.update:
                     id: weather_battery_label
                     text:
-                      format: "\U000F1903 -%.1f kW"
-                      args: [ 'id(battery_grid_export).state' ]
+                      format: "\U000F192D %.1f kW"
+                      args: [ 'id(battery_grid_import).state' ]
                 - lvgl.label.update:
                     id: hvac_battery_label
-                    text_color: white
+                    text_color: color_battery_grid
                 - lvgl.label.update:
                     id: weather_battery_label
-                    text_color: white
+                    text_color: color_battery_grid
               else:
                 # status: normal home consumption
                 - lvgl.label.update:
@@ -439,25 +564,32 @@ script:
       - lvgl.arc.update:
           id: weather_bat_soc_arc
           value: !lambda return id(battery_bat_soc).state;
+      - lvgl.arc.update:
+          id: train_bat_soc_arc
+          value: !lambda return id(battery_bat_soc).state;
       - if:
-          condition:
-            lambda: 'return id(battery_bat_charge).state > 0;'
-          then:
-            # green indicator if charging
-            - lvgl.arc.update:
-                id: hvac_bat_soc_arc
-                indicator:
-                  arc_color: green
-            - lvgl.arc.update:
-                id: weather_bat_soc_arc
-                indicator:
-                  arc_color: green
-          else:
-            if:
+          # condition:
+          #   lambda: 'return id(battery_bat_charge).state > 0;'
+          # then:
+          #   # green indicator if charging
+          #   - lvgl.arc.update:
+          #       id: hvac_bat_soc_arc
+          #       indicator:
+          #         arc_color: color_battery_charge
+          #   - lvgl.arc.update:
+          #       id: weather_bat_soc_arc
+          #       indicator:
+          #         arc_color: color_battery_charge
+          #   - lvgl.arc.update:
+          #       id: train_bat_soc_arc
+          #       indicator:
+          #         arc_color: color_battery_charge
+          # else:
+          #   if:
               condition:
-                lambda: 'return id(battery_bat_soc).state >= 50;'
+                lambda: 'return id(battery_bat_soc).state >= 20;'
               then:
-                # normal indicator
+                # normal indicator 20-100%
                 - lvgl.arc.update:
                     id: hvac_bat_soc_arc
                     indicator:
@@ -466,65 +598,90 @@ script:
                     id: weather_bat_soc_arc
                     indicator:
                       arc_color: white
+                - lvgl.arc.update:
+                    id: train_bat_soc_arc
+                    indicator:
+                      arc_color: white
               else:
                 if:
                   condition:
-                    lambda: 'return id(battery_bat_soc).state >= 20;'
+                    lambda: 'return id(battery_bat_soc).state > 10;'
                   then:
-                    # orange indicator
+                    # orange indicator 11-19%
                     - lvgl.arc.update:
                         id: hvac_bat_soc_arc
                         indicator:
-                          arc_color: orange
+                          arc_color: color_battery_med
                     - lvgl.arc.update:
                         id: weather_bat_soc_arc
                         indicator:
-                          arc_color: orange
+                          arc_color: color_battery_med
+                    - lvgl.arc.update:
+                        id: train_bat_soc_arc
+                        indicator:
+                          arc_color: color_battery_med
                   else:
-                    # red indicator on min battery
+                    # red indicator 0-10%
                     - lvgl.arc.update:
                         id: hvac_bat_soc_arc
                         indicator:
-                          arc_color: color_solar_consumption
+                          arc_color: color_battery_low
                     - lvgl.arc.update:
                         id: weather_bat_soc_arc
                         indicator:
-                          arc_color: color_solar_consumption
+                          arc_color: color_battery_low
+                    - lvgl.arc.update:
+                        id: train_bat_soc_arc
+                        indicator:
+                          arc_color: color_battery_low
 
   - id: update_bat_arc
     then:
       # Bat_charge_solar = max(solar – load, 0)
-      #                  = excess solar -> battery, or grid (if SoC full)
+      #                  = excess solar -> battery or grid (if SoC full)
       - lvgl.arc.update:
           id: hvac_bat_charge_solar_arc
           value: !lambda return 10 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state);
       - lvgl.arc.update:
           id: weather_bat_charge_solar_arc
           value: !lambda return 10 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state);
+      - lvgl.arc.update:
+          id: train_bat_charge_solar_arc
+          value: !lambda return 10 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state);
 
       # Bat_charge_grid = bat_charge – Bat_charge_solar
       - lvgl.arc.update:
           id: hvac_bat_charge_grid_arc
           value: !lambda return 10 * (id(battery_bat_charge).state - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
-          start_angle: !lambda return std::min(119, 90 + static_cast<int>(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
-          min_value: !lambda return std::min(49.0f, 10 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
+          start_angle: !lambda return std::min(119, 90 + int(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
+          max_value: !lambda return std::min(49.0f, 10 * (5 - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
       - lvgl.arc.update:
           id: weather_bat_charge_grid_arc
           value: !lambda return 10 * (id(battery_bat_charge).state - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
-          start_angle: !lambda return std::min(119, 90 + static_cast<int>(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
-          min_value: !lambda return std::min(49.0f, 10 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
+          start_angle: !lambda return std::min(119, 90 + int(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
+          max_value: !lambda return std::min(49.0f, 10 * (5 - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
+      - lvgl.arc.update:
+          id: train_bat_charge_grid_arc
+          value: !lambda return 10 * (id(battery_bat_charge).state - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
+          start_angle: !lambda return std::min(119, 90 + int(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
+          max_value: !lambda return std::min(49.0f, 10 * (5 - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
 
       # Bat_discharge_grid = grid_export – Bat_charge_solar
       - lvgl.arc.update:
           id: hvac_bat_discharge_grid_arc
           value: !lambda return 10 * (id(battery_grid_export).state - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
-          start_angle: !lambda return std::min(119, 90 + static_cast<int>(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
-          min_value: !lambda return std::min(49.0f, 10 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
+          start_angle: !lambda return std::min(119, 90 + int(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
+          max_value: !lambda return std::min(49.0f, 10 * (5 - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
       - lvgl.arc.update:
           id: weather_bat_discharge_grid_arc
           value: !lambda return 10 * (id(battery_grid_export).state - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
-          start_angle: !lambda return std::min(119, 90 + static_cast<int>(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
-          min_value: !lambda return std::min(49.0f, 10 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
+          start_angle: !lambda return std::min(119, 90 + int(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
+          max_value: !lambda return std::min(49.0f, 10 * (5 - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
+      - lvgl.arc.update:
+          id: train_bat_discharge_grid_arc
+          value: !lambda return 10 * (id(battery_grid_export).state - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state));
+          start_angle: !lambda return std::min(119, 90 + int(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
+          max_value: !lambda return std::min(49.0f, 10 * (5 - std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
 
   - id: update_load_arc
     then:
@@ -536,47 +693,66 @@ script:
       - lvgl.arc.update:
           id: weather_load_solar_arc
           value: !lambda return 10 * std::min(id(battery_solar).state, id(battery_house_load).state);
+      - lvgl.arc.update:
+          id: train_load_solar_arc
+          value: !lambda return 10 * std::min(id(battery_solar).state, id(battery_house_load).state);
 
       # Load_battery = bat_discharge – grid_export
       - lvgl.arc.update:
           id: hvac_load_bat_arc
           value: !lambda return 10 * (id(battery_bat_discharge).state - id(battery_grid_export).state);
-          end_angle: !lambda return std::max(61, 90 - static_cast<int>(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
-          min_value: !lambda return std::min(49.0f, 10 * std::min(id(battery_solar).state, id(battery_house_load).state));
+          end_angle: !lambda return std::max(61, 90 - int(30.0/5 * std::min(id(battery_solar).state, id(battery_house_load).state)));
+          max_value: !lambda return std::max(0.0f, 10 * (5 - std::min(id(battery_solar).state, id(battery_house_load).state)));
       - lvgl.arc.update:
           id: weather_load_bat_arc
           value: !lambda return 10 * (id(battery_bat_discharge).state - id(battery_grid_export).state);
-          end_angle: !lambda return std::max(61, 90 - static_cast<int>(30.0/5 * std::max(0.0f, id(battery_solar).state - id(battery_house_load).state)));
-          min_value: !lambda return std::min(49.0f, 10 * std::min(id(battery_solar).state, id(battery_house_load).state));
+          end_angle: !lambda return std::max(61, 90 - int(30.0/5 * std::min(id(battery_solar).state, id(battery_house_load).state)));
+          max_value: !lambda return std::max(0.0f, 10 * (5 - std::min(id(battery_solar).state, id(battery_house_load).state)));
+      - lvgl.arc.update:
+          id: train_load_bat_arc
+          value: !lambda return 10 * (id(battery_bat_discharge).state - id(battery_grid_export).state);
+          end_angle: !lambda return std::max(61, 90 - int(30.0/5 * std::min(id(battery_solar).state, id(battery_house_load).state)));
+          max_value: !lambda return std::max(0.0f, 10 * (5 - std::min(id(battery_solar).state, id(battery_house_load).state)));
 
-      # Load_grid = max(load – Load_solar – Load_battery, 0)
-      #           = whatever's left from the house load
+      # Load_grid = max(grid_import - bat_charge, 0)
       - if:
           condition:
             lambda: 'return id(battery_house_load).state <= 5;'
           then:
             - lvgl.arc.update:
                 id: hvac_load_grid_arc
-                value: !lambda return 10 * std::max(0.0f, id(battery_house_load).state - std::min(id(battery_solar).state, id(battery_house_load).state) - (id(battery_bat_discharge).state - id(battery_grid_export).state));
-                end_angle: !lambda return std::max(61, 90 - static_cast<int>(std::round(30.0/5 * (std::max(0.0f, id(battery_solar).state - id(battery_house_load).state) + std::min(id(battery_solar).state, id(battery_house_load).state)))));
-                min_value: !lambda return std::min(49.0f, 10 * (std::min(id(battery_solar).state, id(battery_house_load).state) + std::min(id(battery_solar).state, id(battery_house_load).state)));
+                value: !lambda return 10 * std::max(0.0f, id(battery_grid_import).state - id(battery_bat_charge).state);
+                end_angle: !lambda return std::max(61, 90 - int(30.0/5 * (std::min(id(battery_solar).state, id(battery_house_load).state) + (id(battery_bat_discharge).state - id(battery_grid_export).state))));
+                max_value: !lambda return std::max(0.0f, 10 * (5 - (std::min(id(battery_solar).state, id(battery_house_load).state) + (id(battery_bat_discharge).state - id(battery_grid_export).state))));
                 mode: REVERSE
             - lvgl.arc.update:
                 id: weather_load_grid_arc
-                value: !lambda return 10 * std::max(0.0f, id(battery_house_load).state - std::min(id(battery_solar).state, id(battery_house_load).state) - (id(battery_bat_discharge).state - id(battery_grid_export).state));
-                end_angle: !lambda return std::max(61, 90 - static_cast<int>(std::round(30.0/5 * (std::max(0.0f, id(battery_solar).state - id(battery_house_load).state) + std::min(id(battery_solar).state, id(battery_house_load).state)))));
-                min_value: !lambda return std::min(49.0f, 10 * (std::min(id(battery_solar).state, id(battery_house_load).state) + std::min(id(battery_solar).state, id(battery_house_load).state)));
+                value: !lambda return 10 * std::max(0.0f, id(battery_grid_import).state - id(battery_bat_charge).state);
+                end_angle: !lambda return std::max(61, 90 - int(30.0/5 * (std::min(id(battery_solar).state, id(battery_house_load).state) + (id(battery_bat_discharge).state - id(battery_grid_export).state))));
+                max_value: !lambda return std::max(0.0f, 10 * (5 - (std::min(id(battery_solar).state, id(battery_house_load).state) + (id(battery_bat_discharge).state - id(battery_grid_export).state))));
+                mode: REVERSE
+            - lvgl.arc.update:
+                id: train_load_grid_arc
+                value: !lambda return 10 * std::max(0.0f, id(battery_grid_import).state - id(battery_bat_charge).state);
+                end_angle: !lambda return std::max(61, 90 - int(30.0/5 * (std::min(id(battery_solar).state, id(battery_house_load).state) + (id(battery_bat_discharge).state - id(battery_grid_export).state))));
+                max_value: !lambda return std::max(0.0f, 10 * (5 - (std::min(id(battery_solar).state, id(battery_house_load).state) + (id(battery_bat_discharge).state - id(battery_grid_export).state))));
                 mode: REVERSE
           else:
             - lvgl.arc.update:
                 id: hvac_load_grid_arc
-                value: !lambda return 10 * std::max(0.0f, id(battery_house_load).state - std::min(id(battery_solar).state, id(battery_house_load).state) - (id(battery_bat_discharge).state - id(battery_grid_export).state));
+                value: !lambda return 10 * std::max(0.0f, id(battery_grid_import).state - id(battery_bat_charge).state);
                 end_angle: 90
-                min_value: 0
+                max_value: 50
                 mode: NORMAL
             - lvgl.arc.update:
                 id: weather_load_grid_arc
-                value: !lambda return 10 * std::max(0.0f, id(battery_house_load).state - std::min(id(battery_solar).state, id(battery_house_load).state) - (id(battery_bat_discharge).state - id(battery_grid_export).state));
+                value: !lambda return 10 * std::max(0.0f, id(battery_grid_import).state - id(battery_bat_charge).state);
                 end_angle: 90
-                min_value: 0
+                max_value: 50
+                mode: NORMAL
+            - lvgl.arc.update:
+                id: train_load_grid_arc
+                value: !lambda return 10 * std::max(0.0f, id(battery_grid_import).state - id(battery_bat_charge).state);
+                end_angle: 90
+                max_value: 50
                 mode: NORMAL

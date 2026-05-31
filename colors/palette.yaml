@@ -182,15 +182,57 @@ color:
     blue: 0.000
     white: 0.0
 
-  # SOLAR - Generation
+  # SOLAR - Solar Generation
   - id: color_solar_generation
     red: 1.000
     green: 0.753
     blue: 0.000
     white: 0.0
 
-  # SOLAR - Consumption
+  # SOLAR - Grid Consumption
   - id: color_solar_consumption
+    red: 0.996
+    green: 0.314
+    blue: 0.000
+    white: 0.0
+
+  # BATTERY - Solar
+  - id: color_battery_solar
+    red: 1.000
+    green: 0.753
+    blue: 0.000
+    white: 0.0
+
+  # BATTERY - Grid
+  - id: color_battery_grid
+    red: 0.996
+    green: 0.314
+    blue: 0.000
+    white: 0.0
+
+  # BATTERY - Battery
+  - id: color_battery_bat
+    red: 0.059
+    green: 0.620
+    blue: 0.835
+    white: 0.0
+
+  # BATTERY - Battery Charging
+  - id: color_battery_charge
+    red: 0.573
+    green: 0.816
+    blue: 0.314
+    white: 0.0
+
+  # BATTERY - Battery Med
+  - id: color_battery_med
+    red: 1.000
+    green: 0.753
+    blue: 0.000
+    white: 0.0
+
+  # BATTERY - Battery Low
+  - id: color_battery_low
     red: 0.996
     green: 0.314
     blue: 0.000

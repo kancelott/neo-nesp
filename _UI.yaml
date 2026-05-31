@@ -390,8 +390,8 @@ lvgl:
             adjustable: True
             state:
               disabled: True
-            min_value: 120    # 12°C (* 10 because decimals not supported)
-            max_value: 340    # 34°C
+            min_value: 160    # 16°C (* 10 because decimals not supported)
+            max_value: 300    # 30°C
             height: 468
             width: 468
             align: CENTER
@@ -414,8 +414,8 @@ lvgl:
             bg_opa: TRANSP
             border_width: 0
             scales:
-              range_from: 120   # 12°C (* 10 because decimals not supported)
-              range_to: 340     # 34°C
+              range_from: 160   # 16°C (* 10 because decimals not supported)
+              range_to: 300     # 30°C
               ticks:
                 count: 89
                 length: 37
@@ -430,7 +430,7 @@ lvgl:
                     r_mod: 8
                 - arc:
                     id: diff_temp_arc
-                    start_value: 120
+                    start_value: 160
                     end_value: 230
                     color: white
                     width: 2
@@ -453,7 +453,7 @@ lvgl:
             state:
               disabled: True
             align: CENTER
-            anim_time: 500ms
+            anim_duration: 500ms
             text_font: roboto_med
             text_opa: TRANSP
             bg_opa: TRANSP
@@ -1680,7 +1680,7 @@ script:
     then:
       if:
         condition:
-          lambda: 'return id(feature_train_enabled) == 1 && id(hass_time).now().day_of_week != 1 && id(hass_time).now().day_of_week != 7 && id(hass_time).now().hour >= 7 && id(hass_time).now().hour <= 8;'
+          lambda: 'return id(feature_train_enabled) == 1 && id(hvac_mode).state != "off" && id(hass_time).now().day_of_week != 1 && id(hass_time).now().day_of_week != 7 && id(hass_time).now().hour >= 7 && id(hass_time).now().hour <= 8;'
         then:
           script.execute: goto_train_page
         else:

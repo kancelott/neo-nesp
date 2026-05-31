@@ -193,7 +193,7 @@ lvgl:
             id: train_zone_2_icon
             align: CENTER
             x: -35
-            y: 192
+            y: 177
             text_align: LEFT
             text: "\U000F0D81"
             text_color: graydark
@@ -201,7 +201,7 @@ lvgl:
             id: train_zone_1_icon
             align: CENTER
             x: -35
-            y: 221
+            y: 206
             text_align: LEFT
             text: "\U000F0D80"
             text_color: graydark
@@ -209,7 +209,7 @@ lvgl:
             id: train_zone_temp_label
             align: CENTER
             x: 10
-            y: 202
+            y: 187
             text_align: LEFT
             text: "00°C\n00°C"
 

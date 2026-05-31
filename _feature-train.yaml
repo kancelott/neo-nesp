@@ -120,6 +120,22 @@ text_sensor:
     on_value:
       - script.execute: update_departure_label_1
 
+  ### HASS train - destination desc
+  - platform: homeassistant
+    entity_id: ${ptv_departure_0}
+    attribute: departure_note
+    id: destination_note_0
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_0
+  - platform: homeassistant
+    entity_id: ${ptv_departure_1}
+    attribute: destination_note
+    id: destination_note_1
+    internal: true
+    on_value:
+      - script.execute: update_departure_label_1
+
 #  ### HASS train - train type
 #  - platform: homeassistant
 #    entity_id: ${ptv_departure_0}
@@ -130,7 +146,6 @@ text_sensor:
 #      - substitute:
 #        - "3 Car  -> "
 #        - "6 Car  -> "
-#        - "7 Car  -> "
 #        - "Silver Hitachi -> HCMT"
 #    on_value:
 #      - script.execute: update_departure_label_0
@@ -143,7 +158,6 @@ text_sensor:
 #      - substitute:
 #        - "3 Car  -> "
 #        - "6 Car  -> "
-#        - "7 Car  -> "
 #        - "Silver Hitachi -> HCMT"
 #    on_value:
 #      - script.execute: update_departure_label_1
@@ -224,23 +238,6 @@ text_sensor:
             std::string first_color = x.substr(0, x.find(';'));
             lv_color_t color = lv_color_hex(strtoul(first_color.c_str(), NULL, 16));
             return color;
-
-binary_sensor:
-  ### HASS train - destination city loop?
-  - platform: homeassistant
-    entity_id: ${ptv_departure_0}
-    attribute: is_city_loop
-    id: destination_city_loop_0
-    internal: true
-    on_state:
-      - script.execute: update_departure_label_0
-  - platform: homeassistant
-    entity_id: ${ptv_departure_1}
-    attribute: is_city_loop
-    id: destination_city_loop_1
-    internal: true
-    on_state:
-      - script.execute: update_departure_label_1
 
 button:
   - platform: template
@@ -364,7 +361,7 @@ lvgl:
               id: line_color_bg_0
               align: OUT_RIGHT_TOP
               x: 10
-              y: 112  # weird alignment
+              y: -5
             text_font: network_med
             text: "0:00"
             text_align: LEFT
@@ -399,7 +396,7 @@ lvgl:
               id: line_color_bg_0
               align: OUT_RIGHT_TOP
               x: 372
-              y: 122
+              y: 0
             border_width: 0
             radius: 0
             bg_color: 0x4f9dd0  # cranbourne blue
@@ -440,7 +437,7 @@ lvgl:
               id: line_color_bg_1
               align: OUT_RIGHT_TOP
               x: 10
-              y: 112  # weird alignment
+              y: -5
             text_font: network_med
             text: "0:00"
             text_align: LEFT
@@ -475,7 +472,7 @@ lvgl:
               id: line_color_bg_1
               align: OUT_RIGHT_TOP
               x: 372
-              y: 122
+              y: 0
             border_width: 0
             radius: 0
             bg_color: 0x4f9dd0  # cranbourne blue
@@ -553,11 +550,7 @@ script:
           id: departure_destination_label_0
           text: !lambda |-
             static char buf[32];
-            if (id(destination_city_loop_0).state) {
-              snprintf(buf, sizeof(buf), "%s", id(destination_0).state.c_str());
-            } else {
-              snprintf(buf, sizeof(buf), "City Loop");
-            }
+            snprintf(buf, sizeof(buf), "%s %s", id(destination_0).state.c_str(), id(destination_note_0).state.c_str());
             return buf;
       - lvgl.label.update:
           id: departure_detailed_label_0
@@ -591,11 +584,7 @@ script:
           id: departure_destination_label_1
           text: !lambda |-
             static char buf[32];
-            if (id(destination_city_loop_0).state) {
-              snprintf(buf, sizeof(buf), "%s", id(destination_1).state.c_str());
-            } else {
-              snprintf(buf, sizeof(buf), "City Loop");
-            }
+            snprintf(buf, sizeof(buf), "%s %s", id(destination_1).state.c_str(), id(destination_note_1).state.c_str());
             return buf;
       - lvgl.label.update:
           id: departure_detailed_label_1
